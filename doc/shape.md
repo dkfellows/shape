@@ -21,13 +21,12 @@ current status of windows to see what shape they have.  The
 **shape** can have any of several forms, depending on the
 _option_ argument:
 
-<dl>
+<dl><dt>
 
-<dt>
 **shape bounds** _window_ ?_kind_?
-</dt>
 
-<dd>
+</dt><dd>
+
 Returns the bounding box of the shape of _window_, or an empty
 string if the window does not currently have a shape set for it
 (i.e. it is rectangular.)  The _kind_ option allows the selection
@@ -36,13 +35,13 @@ of which shape to retrieve the bounding box of, and may be
 option indicates that the bounding shape of the window is to be
 queried (the default.)  The **-clip** option indicates that the
 clipping shape of the window is to be queried.
-</dd>
 
-<dt>
+</dd><dt>
+
 **shape get** _window_ ?_kind_?
-</dt>
 
-<dd>
+</dt><dd>
+
 Returns a list of rectangles describing the shape of _window_. If
 _window_ currently has no shape set for it, this command returns
 the Xserver's current idea of the rectangular shape of _window_
@@ -52,13 +51,13 @@ allows the selection of which shape to retrieve the shape of, and may be
 **-bounding** option indicates that the bounding shape of the window
 is to be queried (the default.)  The **-clip** option indicates that
 the clipping shape of the window is to be queried.
-</dd>
 
-<dt>
+</dd><dt>
+
 **shape offset** _window_ ?_kind_? _xOffset yOffset_
-</dt>
 
-<dd>
+</dt><dd>
+
 Moves the shape of _window_ by _xOffset_ pixels right and
 _yOffset_ pixels down, relative to the overall position of
 _window_.  The contents of _window_ do not move.
@@ -69,13 +68,13 @@ _window_ is to be moved.  The **-clip** option indicates that
 the clipping shape of _window_ is to be moved.  The **-both**
 option (the default) moves both the bounding and the clipping shapes
 of _window_.
-</dd>
 
-<dt>
+</dd><dt>
+
 **shape set** _window_ ?_kind_? ?**-offset** _xOffset yOffset_? _sourcekind_ ?_arg ..._?
-</dt>
 
-<dd>
+</dt><dd>
+
 Sets the shape of _window_ to the shape specified by the source
 described by _sourcekind ..._, possibly pre-offset by
 (_xOffset_,_yOffset_), much as in the **shape offset**
@@ -87,13 +86,13 @@ _window_ is to be set.  The **-clip** option indicates that the
 clipping shape of _window_ is to be set.  The **-both** option
 (the default) sets both the bounding and the clipping shapes of
 _window_.
-</dd>
 
-<dt>
+</dd><dt>
+
 **shape update** _window operation_ ?_kind_? ?**-offset** _xOffset yOffset_? _sourcekind_ ?_arg ..._?
-</dt>
 
-<dd>
+</dt><dd>
+
 Updates the shape of _window_, applying a shape using set
 operation _operation_.  The shape applied is specified by the
 source described by _sourcekind ..._ and is possibly pre-offset by
@@ -110,55 +109,56 @@ _window_.
 The following set operations (and unique abbreviations of them) are
 supported:
 
-<dl>
-<dt>
+<dl><dt>
+
 **set** (aliases: **:=**, **=**)
-</dt>
 
-<dd>
+</dt><dd>
+
 The shape specified by the source becomes the shape of _window_.
-</dd>
 
-<dt>
+</dd><dt>
+
 **union** (aliases: **+=**, **||**)
-</dt>
 
-<dd>
+</dt><dd>
+
 The new shape of _window_ consists of all areas specified in
 either the old shape of _window_, or by the source.
-</dd>
 
-<dt>
+</dd><dt>
+
 **intersect** (aliases: **\*=**, **&&**)
-</dt>
 
-<dd>
+</dt><dd>
+
 The new shape of _window_ consists of all areas specified in both
 the old shape of _window_, and by the source.
-</dd>
 
-<dt>
+</dd><dt>
+
 **subtract** (aliases: **-=**)
-</dt>
 
-<dd>
+</dt><dd>
+
 The new shape of _window_ consists of all areas specified by the
 old shape of _window_ that are not specified by the source.
-</dd>
 
-<dt>
+</dd><dt>
+
 **invert** (no aliases)
-</dt>
 
-<dd>
+</dt><dd>
+
 The new shape of _window_ consists of all areas specified by the
 source that are not specified by the old shape of _window_.
-</dd>
-</dl>
-</dd>
-<dt>
+
+</dd></dl></dd><dt>
+
 **shape version**
+
 </dt><dd>
+
 Return the version number of the non-rectangular window extension
 installed on the X server that serves the screen that **.** is on.
 Note that this is _not_ the version number of the Tcl/Tk
@@ -166,44 +166,44 @@ extension, which is reported in the (global) variables
 **shape\_version** and **shape\_patchLevel**.
 
 This returns a dummy value on Windows.
-</dd>
-</dl>
+
+</dd></dl>
 
 SHAPE SOURCES
 ----
 There are six types of shape sources, though they are not universally
 supported:
 
-<dl>
-.TP
-**bitmap** _bitmap_
-</dt>
+<dl><dt>
 
-<dd>
+**bitmap** _bitmap_
+
+</dt><dd>
+
 This uses the outline of _bitmap_ (which may be any string
 acceptable to `Tk_GetBitmap()`) as a shape source.  The same
 information is supplied to operations involving bounding and clipping
 shapes.
 
 This operation is not supported on Windows.
-</dd>
 
-<dt>
+</dd><dt>
+
 **photo** _photoImageName_
-</dt>
 
-<dd>
+</dt><dd>
+
 This uses (with a suitably patched Tk core) the transparency
 information from the given photo image (specified using any string
 acceptable to `Tk_GetPhoto()`).  The same information is supplied to
 operations involving bounding and clipping shapes.
-</dd>
 
-<dt>
+</dd><dt>
+
 **rectangles** _rectangleList_
-</dt>
 
-<dd>
+</dt><dd>
+
 This uses the union of the rectangles in _rectangleList_ as a
 source of shape information (the same information is supplied to
 operations involving bounding and clipping shapes).  Each rectangle is
@@ -211,13 +211,13 @@ described a list of four numbers _x1_, _y1_, _x2_ and
 _y2_ where (_x1_,_y1_) is the top-left corner of the
 rectangle, and (_x2_,_y2_) is the bottom-right corner of the
 rectangle.
-</dd>
 
-<dt>
+</dd><dt>
+
 **reset**
-</dt>
 
-<dd>
+</dt><dd>
+
 This resets the shape of the window the operation is being applied to
 to a rectangle with the dimensions of the window (or at least, the
 dimensions that the Xserver thinks that the window has.)  This
@@ -225,13 +225,13 @@ operation is only valid as part of the **shape set** command.  It
 ought to mark the window as not being shaped at all, but there is no
 protocol for this in version 1.0 of the X non-rectangular window
 extension, making it an impossible operation.
-</dd>
 
-<dt>
+</dd><dt>
+
 **text** _string font_
-</dt>
 
-<dd>
+</dt><dd>
+
 This uses an image of _string_ drawn in _font_ as a source of
 shape information (the same information is supplied to operations
 involving bounding and clipping shapes) where _font_ is any string
@@ -240,17 +240,18 @@ as whitespace characters in _string_, and that the effects of
 using newline and tab characters is undefined.
 
 This operation is not supported on Windows.
-</dd>
 
-<dt>
+</dd><dt>
+
 **window** _window_
-</dt>
 
-<dd>
+</dt><dd>
+
 This uses _window_ as a source of shape information, with the
 bounding shape of _window_ being used to supply bounding
 information, and the clipping shape of _window_ being used to
 supply clipping information.
+
 </dl>
 
 KINDS OF SHAPE
@@ -311,36 +312,37 @@ DEMO PROGRAMS
 ----
 All these programs are located in the `demos` directory.
 
-<dl>
-<dt>
-`dragger.tcl`
-</dt>
+<dl><dt>
 
-<dd>
+`dragger.tcl`
+
+</dt><dd>
+
 This creates a window that when Mouse Button 1 is depressed in, brings
 up a coloured cursor that (partially) changes colour depending on
 whether the cursor is over the source window or not.
-</dd>
 
-<dt>
+</dd><dt>
+
 `fancytext.tcl`
-</dt>
 
-<dd>
+</dt><dd>
+
 A fairly simple, but effective, demonstration of how to make a simple
 piece of text look far more effective using moving lines clipped to
 the text to suggest the letters without showing them all at once.
-</dd>
 
-<dt>
+</dd><dt>
+
 `fingerprint.tcl`
-</dt>
 
-<dd>
+</dt><dd>
+
 This puts a grubby-looking fingerprint on the screen.  The fingerprint
 can be dragged about the screen (the cursor changes when it is
 possible to drag the fingerprint).  Thanks to John LoVerso
 `<loverso@opengroup.org>` for this little demo!
+
 </dd>
 </dl>
 
