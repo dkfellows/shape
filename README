@@ -1,0 +1,24 @@
+Shaped Window Extension 0.4 for Tcl/Tk, Source Code Distribution
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This distribution is made under the terms described in the
+"license.txt" file.
+
+It allows a system that uses the Tk toolkit over the Tcl interpreter
+(of at least version 8.0) to work with windows whose shapes are
+described by other than a simple rectangle.
+
+There is some documentation (both as NROFF source, with the tmac.an
+macro package loaded, and PostScript as generated from that source
+with GROFF) in the shape0.4/doc directory.
+
+There are some demonstrations in the shape0.4/demos directory.
+
+Any bug reports or feature suggestions are welcome; please send them
+to the author at fellowsd@cs.man.ac.uk  The author does not (at the
+time of writing) provide commercial-level support for this software.
+
+Note that this software should be considered to be of no better than
+beta quality on Unix and alpha quality on Windows.  It is likely that
+there will be a fair number more interim distributions like this one
+before a full release.

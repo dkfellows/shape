@@ -1,0 +1,186 @@
+'\" -*- nroff -*-
+'\" Copyright (c) 2000 Donal K. Fellows
+'\"
+'\" The author hereby grants permission to use, copy, modify, distribute,
+'\" and license this software and its documentation for any purpose, provided
+'\" that existing copyright notices are retained in all copies and that this
+'\" notice is included verbatim in any distributions. No written agreement,
+'\" license, or royalty fee is required for any of the authorized uses.
+'\" Modifications to this software may be copyrighted by their authors
+'\" and need not follow the licensing terms described here, provided that
+'\" the new terms are clearly indicated on the first page of each file where
+'\" they apply.
+'\"
+'\" IN NO EVENT SHALL THE AUTHOR OR DISTRIBUTORS BE LIABLE TO ANY PARTY
+'\" FOR DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES
+'\" ARISING OUT OF THE USE OF THIS SOFTWARE, ITS DOCUMENTATION, OR ANY
+'\" DERIVATIVES THEREOF, EVEN IF THE AUTHOR HAS BEEN ADVISED OF THE
+'\" POSSIBILITY OF SUCH DAMAGE.
+'\"
+'\" THE AUTHOR AND DISTRIBUTORS SPECIFICALLY DISCLAIM ANY WARRANTIES,
+'\" INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY,
+'\" FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.  THIS SOFTWARE
+'\" IS PROVIDED ON AN "AS IS" BASIS, AND THE AUTHOR AND DISTRIBUTORS HAVE
+'\" NO OBLIGATION TO PROVIDE MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR
+'\" MODIFICATIONS.
+'\" 
+'\" $Id$
+'\" 
+.so man.macros
+.TH Shape_MoveShape 3 0.4 Shape "Non-rectangular Window Extension"
+
+.BS
+.SH "NAME"
+Shape_CombineBitmap, Shape_CombineRectangles,
+Shape_CombineRectanglesOrdered, Shape_CombineRegion,
+Shape_CombineWindow, Shape_MoveShape \- apply a shaping to a window
+.SH "SYNOPSIS"
+.nf
+\fB#include <tkint.h>\fR
+\fB#include <shape.h>\fR
+.sp
+int
+\fBShape_CombineBitmap(\fIinterp, tkwin, kind, op, x, y, bitmap\fB)\fR
+.sp
+int
+\fBShape_CombineRectangles(\fIinterp, tkwin, kind, op, rectc, rectv\fB)\fR
+.sp
+int
+\fBShape_CombineRectanglesOrdered(\fIinterp, tkwin, kind, op, rectc, rectv\fB)\fR
+.sp
+int
+\fBShape_CombineRegion(\fIinterp, tkwin, kind, op, x, y, region\fB)\fR
+.sp
+int
+\fBShape_CombineWindow(\fIinterp, tkwin, kind, op, x, y, srcwin\fB)\fR
+.sp
+int
+\fBShape_MoveShape(\fIinterp, tkwin, kind, x, y\fB)\fR
+.SH "ARGUMENTS"
+.AS "Tk_Window" "*interp"
+.AP Tcl_Interp *interp in
+Interpreter to use for error reporting.
+.AP Tk_Window tkwin in
+Token for window to apply the shaping operation to.
+.AP int kind in
+Which shape should the operation be applied to; must be a boolean
+combination of SHAPE_BOUNDING, SHAPE_CLIP, and SHAPE_TOPLEVEL.
+.AP int op in
+What kind of operation to apply; should be SHAPE_OP_SET,
+SHAPE_OP_UNION, SHAPE_OP_INTERSECT, SHAPE_OP_SUBTRACT, or
+SHAPE_OP_INVERT.
+.AP int x in
+Offset (along X axis) to apply to shape.
+.AP int y in
+Offset (along Y axis) to apply to shape.
+.AP Pixmap bitmap in
+Identifier for a bitmap that defines a shape to apply.
+.AP int rectc in
+Number of rectangles in array.
+.AP XRectangle *rectv in
+Array of rectangles that define a shape to apply.
+.AP TkRegion region in
+Token for region defining the shape to apply.
+.AP Tk_Window srcwin in
+Token for window whose shape is to be used to apply.
+.BE
+
+.SH "DESCRIPTION"
+.PP
+These functions let you set and modify the shape of a given window,
+\fItkwin\fR.  Each \fIShape_Combine*\fR function operates almost the
+same, supporting the same options as to what parts of the window to
+apply the shaping operation to (\fIkind\fR,) and the same kinds of
+ways of applying a shape (\fIop\fR.)  Most also support the
+application of an offset \fI(x,y)\fR to the shape to be applied before
+application to the window, making it easier to support resizing
+windows.  Each function returns TCL_OK on success, and TCL_ERROR on
+failure (when it leaves a description of the problem in \fIinterp\fR
+suitable for passing back to calling code.)
+
+.PP
+.B Shape_CombineBitmap
+applies the shape defined by the given bitmap, \fIbitmap\fR, to the
+window.
+
+.PP
+.B Shape_CombineRegion
+applies the shape defined by the given region, \fIregion\fR, to the
+window.
+
+.PP
+.B Shape_CombineWindow
+applies the shape already defined on another window, \fIsrcwin\fR, to
+a window (useful for propagating shapes up window hierarchies.)
+
+.PP
+.B Shape_CombineRectangles
+applies the shape defined by an array of \fRrectc\fR rectangles,
+\fIrectv\fR, to the window.  No overall transformation for the
+rectangles is supported, since that is easily applied in the calling
+code.
+
+.PP
+.B Shape_CombineRectanglesOrdered
+applies the shape defined by an array of \fIrectc\fR rectangles,
+\fIrectv\fR, to the window.  The rectangles must be arranged so that
+they are non-overlapping and proceed in strict scanline order.  \fINot
+all platforms make use of this extra information.\fR No overall
+transformation for the rectangles is supported, since that is easily
+applied in the calling code.
+
+.PP
+.B Shape_MoveShape
+applies a translation (defined by \fI(x,y)\fR in the coordinate system
+of the root window) to the specified shape of the window.
+
+.SH "OPERATIONS"
+
+Five operations are supported:
+.TP 25
+SHAPE_OP_SET
+This sets the shape of the window to be that specified by the source.
+.TP 25
+SHAPE_OP_UNION
+This updates the shape of the window to include that specified by the
+source.
+.TP 25
+SHAPE_OP_INTERSECT
+This updates the shape of the window to be the overlap between the
+current shape of the window and the shape of the source.
+.TP 25
+SHAPE_OP_SUBTRACT
+This updates the shape of the window to \fIexclude\fR the shape of the
+source.
+.TP 25
+SHAPE_OP_INVERT
+This sets the shape of the window to be wherever was not previously in
+the shape of the window.  The source is ignored.
+.LP
+
+.SH "MODIFICATION TARGETS"
+
+Under X, each window has two different shapes; the bounding shape and
+the clipping shape.  The \fIbounding\fR shape specifies which parts of
+the window obscure things which are in underlying windows, and the
+\fIclipping\fR shape specifies which parts of the window are actually
+drawn upon by the application.  The space between is the border of the
+window.  Note that parts of windows that can be drawn upon but which
+do not obscure the underlying matter cannot actually be seen anyway.
+
+Tk manages its own borders, so these two shapes should normally be
+made identical (by passing KIND_BOTH to the \fIkind\fR parameter.)
+These functions support individual modification though.
+
+To make things more complex (\fIi.e.\fR to help the implementation of
+menubars and embedded windows,) Tk implements toplevel windows using
+several X windows.  This means that to alter the shape of a toplevel,
+it is also necessary to modify the shape of the containing window.
+This operation is performed automatically if the KIND_TOPLEVEL flag is
+set in the \fIkind\fR parameter.
+
+.SH "AUTHOR"
+Donal K. Fellows \fC<fellowsd@cs.man.ac.uk>\fR
+
+.SH "SEE ALSO"
+shape(n), Shape_GetBbox(3), Shape_RenderTextAsRectangles(3)

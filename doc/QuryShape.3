@@ -1,0 +1,121 @@
+'\" -*- nroff -*-
+'\" Copyright (c) 2000 Donal K. Fellows
+'\"
+'\" The author hereby grants permission to use, copy, modify, distribute,
+'\" and license this software and its documentation for any purpose, provided
+'\" that existing copyright notices are retained in all copies and that this
+'\" notice is included verbatim in any distributions. No written agreement,
+'\" license, or royalty fee is required for any of the authorized uses.
+'\" Modifications to this software may be copyrighted by their authors
+'\" and need not follow the licensing terms described here, provided that
+'\" the new terms are clearly indicated on the first page of each file where
+'\" they apply.
+'\"
+'\" IN NO EVENT SHALL THE AUTHOR OR DISTRIBUTORS BE LIABLE TO ANY PARTY
+'\" FOR DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES
+'\" ARISING OUT OF THE USE OF THIS SOFTWARE, ITS DOCUMENTATION, OR ANY
+'\" DERIVATIVES THEREOF, EVEN IF THE AUTHOR HAS BEEN ADVISED OF THE
+'\" POSSIBILITY OF SUCH DAMAGE.
+'\"
+'\" THE AUTHOR AND DISTRIBUTORS SPECIFICALLY DISCLAIM ANY WARRANTIES,
+'\" INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY,
+'\" FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.  THIS SOFTWARE
+'\" IS PROVIDED ON AN "AS IS" BASIS, AND THE AUTHOR AND DISTRIBUTORS HAVE
+'\" NO OBLIGATION TO PROVIDE MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR
+'\" MODIFICATIONS.
+'\" 
+'\" $Id$
+'\" 
+.so man.macros
+.TH Shape_QueryVersion 3 0.4 Shape "Non-rectangular Window Extension"
+
+.BS
+.SH "NAME"
+Shape_GetBbox, Shape_GetShapeRectanglesObj, Shape_QueryVersion,
+Shape_ExtensionPresent \- get info about a shaping or the shaping
+subsystem
+.SH "SYNOPSIS"
+.nf
+\fB#include <shape.h>\fR
+.sp
+int
+\fBShape_GetBbox(\fIinterp, tkwin, getClip, valid, x1, y1, x2, y2\fB)\fR
+.sp
+int
+\fBShape_GetShapeRectanglesObj(\fIinterp, tkwin, getClip\fB)\fR
+.sp
+int
+\fBShape_QueryVersion(\fItkwin, majorPtr, minorPtr\fB)\fR
+.sp
+int
+\fBShape_ExtensionPresent(\fItkwin\fB)\fR
+.SH "ARGUMENTS"
+.AS "Tk_Window" "*majorPtr"
+.AP Tcl_Interp *interp in
+Interpreter to use for error reporting and providing the result from
+\fBShape_GetShapeRectanglesObj\fR.
+.AP Tk_Window tkwin in
+Token for window to query the shaping of.
+.AP int getClip in
+Whether to use the clipping shape of the window (see MODIFICATION
+TARGETS in the Shape_MoveShape(3) manual page for a discussion.)
+.AP int *valid out
+Whether a valid bounding box is present for the shape of the window.
+.AP int *x1 out
+The x-coordinate of the left side of the bounding box.
+.AP int *y1 out
+The y-coordinate of the top side of the bounding box.
+.AP int *x2 out
+The x-coordinate of the right side of the bounding box.
+.AP int *y2 out
+The y-coordinate of the bottom side of the bounding box.
+.AP int *majorPtr out
+The major version of the X Shaped Window extension installed on the
+XServer.
+.AP int *minorPtr out
+The minor version of the X Shaped Window extension installed on the
+XServer.
+.BE
+
+.SH "DESCRIPTION"
+.B Shape_GetBbox
+queries the bounding box of the bounding shape (or the clipping shape
+if \IgetClip\fR is set) of the given window (specified by
+\fItkwin\fR.)  If a shape is defined for the window, the flag
+indicated by \fIvalid\fR is set and the bounds are passed in \fIx1\fR,
+\fIy1\fR, \fIx2\fR and \fIy2\fR.  If no shape is defined for the
+window, the flag is reset instead.  In both cases, TCL_OK is returned
+from the function.  If an error occurs, a message is left in the
+specified interpreter and TCL_ERROR is returned; \fIvalid\fR is not
+modified in this case.
+
+.B Shape_GetShapeRectanglesObj
+queries the bounding shape (or the clipping shape if \IgetClip\fR is
+set) of the given window (specified by \fItkwin\fR.)  If the shape is
+successfully queried, a description of the shape in terms of a list of
+rectangles (each rectangle being represented by a list of four
+elements identifying the coordinates of that rectangle) is placed in
+the interpreter, \fIinterp\fR, and TCL_OK is returned.  If an error
+occurs, a suitable message is placed in the interpreter, and TCL_ERROR
+is returned.
+
+.B Shape_QueryVersion
+queries the version of the XShape extension installed on the (display
+of the) XServer which window \fItkwin\fR exists on.  The result is
+non-zero (true) if the query was successful (in which case the
+variables identified by \fImajorVersion\fR and \fIminorVersion\fR are
+updated to contain the version number details) and zero (false) if the
+query failed.  \fIDummy values are returned under Windows.\fR
+
+.B Shape_ExtensionPresent
+queries whether the XShape extension is installed on the XServer which
+window \fItkwin\fR exists on, returning a non-zero (true) value if
+this is the case.  \fIThis function always succeeds on Windows due to
+the way the linking works.\fR  This function is normally only called
+during the initialisation of the extension.
+
+.SH "AUTHOR"
+Donal K. Fellows \fC<fellowsd@cs.man.ac.uk>\fR
+
+.SH "SEE ALSO"
+shape(n), Shape_MoveShape(3), Shape_RenderTextAsRectangles(3)

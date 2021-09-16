@@ -1,0 +1,89 @@
+## -*- tcl -*-
+
+# top-level error messages
+test shape-1.1 {Shape needs subcommand} {
+    list [catch {
+	shape
+    } msg] $msg
+} {1 "wrong # args: should be \"shape subcommand ?window arg ...?\""}
+test shape-1.2 {Shape subcommand list} {
+    list [catch {
+	shape Dummy
+    } msg] $msg
+} {1 "bad subcommand \"Dummy\": must be\
+	bounds, get, offset, set, update, or version"}
+
+# version subcommand
+test shape-2.1 {Shape version: command format} {
+    list [catch {
+	shape version Dummy
+    } msg] $msg
+} {1 " wrong # args: should be \"shape version\""}
+test shape-2.2 {Shape version: result format} {
+    string is double -strict [shape version]
+} {1}
+
+# set subcommand
+test shape-3.1 {Shape set: command format} {
+    list [catch {
+	shape set
+    } msg] $msg
+} {1 "wrong # args: should be \"shape set pathName ?options?\""}
+
+# get subcommand
+test shape-4.1 {Shape get: command format} {
+    list [catch {
+	shape get
+    } msg] $msg
+} {1 "wrong # args: should be \"shape get pathName ?-bounding/-clip?\""}
+test shape-4.2 {Shape get: command format} {
+    list [catch {
+	shape get ? ? ?
+    } msg] $msg
+} {1 "wrong # args: should be \"shape get pathName ?-bounding/-clip?\""}
+
+# update subcommand
+test shape-5.1 {Shape update: command format} {
+    list [catch {
+	shape update
+    } msg] $msg
+} {1 "wrong # args: should be \"shape update pathName operation ?options?\""}
+
+# offset subcommand
+test shape-6.1 {Shape offset: command format} {
+    list [catch {
+	shape offset
+    } msg] $msg
+} {1 "wrong # args: should be\
+	\"shape offset pathName ?-bounding/-clip/-both? x y\""}
+test shape-6.2 {Shape offset: command format} {
+    list [catch {
+	shape offset ?
+    } msg] $msg
+} {1 "wrong # args: should be\
+	\"shape offset pathName ?-bounding/-clip/-both? x y\""}
+test shape-6.3 {Shape offset: command format} {
+    list [catch {
+	shape offset ? ?
+    } msg] $msg
+} {1 "wrong # args: should be\
+	\"shape offset pathName ?-bounding/-clip/-both? x y\""}
+test shape-6.4 {Shape offset: command format} {
+    list [catch {
+	shape offset ? ? ? ? ?
+    } msg] $msg
+} {1 "wrong # args: should be\
+	\"shape offset pathName ?-bounding/-clip/-both? x y\""}
+
+# bounds subcommand
+test shape-7.1 {Shape bounds: command format} {
+    list [catch {
+	shape bounds
+    } msg] $msg
+} {1 "wrong # args: should be \"shape bounds pathName ?-bounding/-clip?\""}
+test shape-7.2 {Shape bounds: command format} {
+    list [catch {
+	shape bounds ? ? ?
+    } msg] $msg
+} {1 "wrong # args: should be \"shape bounds pathName ?-bounding/-clip?\""}
+

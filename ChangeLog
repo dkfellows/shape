@@ -1,0 +1,29 @@
+2000-09-13  Donal K. Fellows  <fellowsd@cs.man.ac.uk>
+
+	* configure.in: Fixed a blooper that assumed that Tcl and Tk were
+	installed in the same directory.
+
+2000-09-11  Donal K. Fellows  <fellowsd@cs.man.ac.uk>
+
+	* configure.in: Changed to build correctly on Solaris (at least on
+	my workstation...)  Also altered mechanism for guessing whether to
+	support photo image shapes to use configure instead of testing
+	what was defined in tkInt.h...
+
+2000-09-10  Donal K. Fellows  <donal@ugglan.demon.co.uk>
+
+	* license.txt: Pulled this out into a single file.  Made all
+	source files reference this one for license.
+
+	* shape.test: Started work on writing a test suite.  Will need to
+	continue on a Unix system so results - particularly of get
+	operations - can be used to help write the suite...
+
+2000-09-09  Donal K. Fellows  <donal@ugglan.demon.co.uk>
+
+	* shape.h: Altered KIND_* definitions to have a SHAPE_ prefix.
+
+	* shapeInt.h: Created this file.  Shape_RenderTextAsRectangles now
+	defined throuth this header and made "private" to the extension by
+	changing its name, as its applicability to other domains is really
+	small.  Other files updated to take account of this...

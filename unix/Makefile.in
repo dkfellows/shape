@@ -1,0 +1,86 @@
+# This Makefile is used to create the example loadable module.
+# It also illustrates how to take advantage of configuration
+# exported by Tcl to set up Makefiles for shared libraries.
+#
+# SCCS: @(#) Makefile.in 1.5 97/08/14 19:01:21
+
+SOFILE		= libshape04.so.1.0
+EXEFILE		= shapewish
+UNIX_OBJS	= shapeUnixImpl.o shapeUnixText.o
+GENERIC_OBJS	= shape.o
+
+GENERIC_SRCS	= $(GENERIC_DIR)/shape.c
+UNIX_SRCS	= \
+	$(UNIX_DIR)/shapeUnixImpl.c \
+	$(UNIX_DIR)/shapeUnixText.c
+
+OBJS	= $(GENERIC_OBJS) $(UNIX_OBJS)
+SRCS	= $(GENERIC_SRCS) $(UNIX_SRCS)
+
+# The directory containing the Tcl library archive file appropriate
+# for this version of Tk:
+TCL_BIN_DIR = @TCL_BIN_DIR@
+
+# Libraries to use when linking:
+LIBS = @TCL_LIB_SPEC@ @TCL_LIBS@ -lc
+
+#----------------------------------------------------------------
+# The information below is modified by the configure script when
+# Makefile is generated from Makefile.in.  You shouldn't normally
+# modify any of this stuff by hand.
+#----------------------------------------------------------------
+
+CC =			@CC@
+SHLIB_CFLAGS =		@SHLIB_CFLAGS@
+SHLIB_LD =		@SHLIB_LD@
+SHLIB_SUFFIX =		@SHLIB_SUFFIX@
+TCL_INCLUDE_DIR =	@TCL_INCLUDE@
+TK_INCLUDE_DIR =	@TK_INCLUDE@
+TK_XINCLUDES =		@TK_XINCLUDES@
+VPATH =			@srcdir@
+TK_LIB_SPEC =		@TK_LIB_SPEC@
+TCL_LIB_SPEC = 		@TCL_LIB_SPEC@
+TK_LIBS =		@TK_LIBS@
+TCL_SRC_DIR =		@TCL_SRC_DIR@
+TK_SRC_DIR =		@TK_SRC_DIR@
+
+SRC_DIR			= @srcdir@
+TOP_DIR			= @srcdir@/..
+GENERIC_DIR		= $(TOP_DIR)/generic
+UNIX_DIR		= $(TOP_DIR)/unix
+INCLUDE_DIR		= $(TOP_DIR)/include
+# ----------------------------------------------------------------------
+CFLAGS = -g -DSHAPE_PHOTO=@SHAPE_PHOTO@
+CC_SWITCHES = $(CFLAGS) ${CFLAGS_WARNING} ${SHLIB_CFLAGS} \
+	-I${INCLUDE_DIR} -I${GENERIC_DIR} -I${UNIX_DIR} \
+	-I${TK_INCLUDE_DIR} ${TK_XINCLUDES} -I${TCL_INCLUDE_DIR} \
+	-I${TCL_SRC_DIR}/generic -I${TCL_SRC_DIR}/unix \
+	-I${TK_SRC_DIR}/generic -I${TK_SRC_DIR}/unix
+# ----------------------------------------------------------------------
+all: @PRIMARY_TARGET@
+
+$(OBJS): $(INCLUDE_DIR)/shape.h $(INCLUDE_DIR)/panic.h $(GENERIC_DIR)/shapeInt.h
+
+shape.o: $(GENERIC_DIR)/shape.c
+	$(CC) -c $(CC_SWITCHES) $(GENERIC_DIR)/shape.c
+tkAppInit.o: $(GENERIC_DIR)/tkAppInit.c
+	$(CC) -c $(CC_SWITCHES) $(GENERIC_DIR)/tkAppInit.c
+shapeUnixImpl.o: $(UNIX_DIR)/shapeUnixImpl.c
+	$(CC) -c $(CC_SWITCHES) $(UNIX_DIR)/shapeUnixImpl.c
+shapeUnixText.o: $(UNIX_DIR)/shapeUnixText.c
+	$(CC) -c $(CC_SWITCHES) $(UNIX_DIR)/shapeUnixText.c
+# ----------------------------------------------------------------------
+$(SOFILE): $(OBJS)
+	${SHLIB_LD} -o $@ $^ @SHLIB_LD_LIBS@
+$(EXEFILE): $(OBJS) tkAppInit.o
+	$(CC) -o $@ $^ @SHLIB_LD_LIBS@ ${TK_LIB_SPEC} ${TCL_LIB_SPEC} ${TK_LIBS}
+# ----------------------------------------------------------------------
+clean:
+	rm -f *.o *.a $(SOFILE) $(EXEFILE) core
+distclean: clean
+	rm -f Makefile config.cache config.log config.status
+# ----------------------------------------------------------------------
+Makefile: Makefile.in config.status
+	./config.status
+depend:
+	makedepend -- $(DEPEND_SWITCHES) -- $(SRCS)
