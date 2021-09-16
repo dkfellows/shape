@@ -81,7 +81,7 @@ described by _sourcekind ..._, possibly pre-offset by
 command.  Shape sources are described in "SHAPE SOURCES" below.
 
 The _kind_ option allows the selection of which shape to set.  The
-**-bounding* kind indicates that the bounding shape of
+**-bounding** kind indicates that the bounding shape of
 _window_ is to be set.  The **-clip** option indicates that the
 clipping shape of _window_ is to be set.  The **-both** option
 (the default) sets both the bounding and the clipping shapes of
