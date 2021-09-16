@@ -22,8 +22,8 @@
 #define ShapeApplyToParent(kind)   ((kind) & SHAPE_KIND_TOPLEVEL)
 
 EXTERN XRectangle *
-ShapeRenderTextAsRectangles _ANSI_ARGS_((Tk_Window tkwin, Tcl_Interp *interp,
-					 Tcl_Obj *string, Tcl_Obj *font,
-					 int *numRects));
+ShapeRenderTextAsRectangles(Tk_Window tkwin, Tcl_Interp *interp,
+				   Tcl_Obj *string, Tcl_Obj *font,
+				   int *numRects);
 
 #endif

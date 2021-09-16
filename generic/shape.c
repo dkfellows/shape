@@ -7,8 +7,6 @@
  *
  * See "license.txt" for details of the license this file is made
  * available under.
- *
- * $Id$
  */
 
 #include "shapeInt.h"
@@ -27,78 +25,64 @@
 #include <X11/Xutil.h>
 #include "panic.h"
 
-#define min(x,y) ((x)<(y)?(x):(y))
-#define max(x,y) ((x)<(y)?(y):(x))
-#define encodeKind(idx,flag) ((idx)|(flag?SHAPE_KIND_TOPLEVEL:0))
+#define min(x,y)	((x)<(y) ? (x) : (y))
+#define max(x,y)	((x)<(y) ? (y) : (x))
+#define encodeKind(idx,flag)	((idx) | (flag ? SHAPE_KIND_TOPLEVEL : 0))
 
-typedef int (*shapeCommandHandler)
-     _ANSI_ARGS_((Tk_Window tkwin, Tcl_Interp *interp, int opnum,
-		  int objc, Tcl_Obj *CONST objv[]));
-typedef int (*shapeApplicator)
-     _ANSI_ARGS_((Tk_Window tkwin, Tcl_Interp *interp, int x, int y, int op,
-		  int kind, int objc, Tcl_Obj *CONST objv[]));
+typedef int (*shapeCommandHandler) (Tk_Window tkwin, Tcl_Interp *interp,
+			int opnum, int objc, Tcl_Obj *const objv[]);
+typedef int (*shapeApplicator) (Tk_Window tkwin, Tcl_Interp *interp,
+			int x, int y, int op, int kind, int objc,
+			Tcl_Obj *const objv[]);
 
-static int
-shapeBoundClipOps _ANSI_ARGS_((Tk_Window tkwin, Tcl_Interp *interp, int opnum,
-			       int objc, Tcl_Obj *CONST objv[]));
-static int
-shapeOffsetOp     _ANSI_ARGS_((Tk_Window tkwin, Tcl_Interp *interp, int opnum,
-			       int objc, Tcl_Obj *CONST objv[]));
-static int
-shapeSetUpdateOps _ANSI_ARGS_((Tk_Window tkwin, Tcl_Interp *interp, int opnum,
-			       int objc, Tcl_Obj *CONST objv[]));
-static int
-shapeBitmap _ANSI_ARGS_((Tk_Window tkwin, Tcl_Interp *interp, int x, int y,
-			 int op, int kind, int objc, Tcl_Obj *CONST objv[]));
-static int
-shapeRects _ANSI_ARGS_((Tk_Window tkwin, Tcl_Interp *interp, int x, int y,
-			int op, int kind, int objc, Tcl_Obj *CONST objv[]));
-static int
-shapeReset _ANSI_ARGS_((Tk_Window tkwin, Tcl_Interp *interp, int x, int y,
-			int op, int kind, int objc, Tcl_Obj *CONST objv[]));
-static int
-shapeText _ANSI_ARGS_((Tk_Window tkwin, Tcl_Interp *interp, int x, int y,
-		       int op, int kind, int objc, Tcl_Obj *CONST objv[]));
-static int
-shapeWindow _ANSI_ARGS_((Tk_Window tkwin, Tcl_Interp *interp, int x, int y,
-			 int op, int kind, int objc, Tcl_Obj *CONST objv[]));
+static int		shapeBoundClipOps(Tk_Window tkwin, Tcl_Interp *interp,
+			    int opnum, int objc, Tcl_Obj *const objv[]);
+static int		shapeOffsetOp(Tk_Window tkwin, Tcl_Interp *interp,
+			    int opnum, int objc, Tcl_Obj *const objv[]);
+static int		shapeSetUpdateOps(Tk_Window tkwin, Tcl_Interp *interp,
+			    int opnum, int objc, Tcl_Obj *const objv[]);
+static int		shapeBitmap(Tk_Window tkwin, Tcl_Interp *interp,
+			    int x, int y, int op, int kind, int objc,
+			    Tcl_Obj *const objv[]);
+static int		shapeRects(Tk_Window tkwin, Tcl_Interp *interp,
+			    int x, int y, int op, int kind, int objc,
+			    Tcl_Obj *const objv[]);
+static int		shapeReset(Tk_Window tkwin, Tcl_Interp *interp,
+			    int x, int y, int op, int kind, int objc,
+			    Tcl_Obj *const objv[]);
+static int		shapeText(Tk_Window tkwin, Tcl_Interp *interp,
+			    int x, int y, int op, int kind, int objc,
+			    Tcl_Obj *const objv[]);
+static int		shapeWindow(Tk_Window tkwin, Tcl_Interp *interp,
+			    int x, int y, int op, int kind, int objc,
+			    Tcl_Obj *const objv[]);
 #ifdef SUPPORTS_PHOTO_REGION
-static int
-shapePhoto _ANSI_ARGS_((Tk_Window tkwin, Tcl_Interp *interp, int x, int y,
-			int op, int kind, int objc, Tcl_Obj *CONST objv[]));
+static int		shapePhoto(Tk_Window tkwin, Tcl_Interp *interp,
+			    int x, int y, int op, int kind, int objc,
+			    Tcl_Obj *const objv[]);
 #endif
 
-static int
-shapeCmd _ANSI_ARGS_((ClientData clientData, Tcl_Interp *interp, int objc,
-		      Tcl_Obj *CONST objv[]));
-
+static int		shapeCmd(ClientData clientData, Tcl_Interp *interp,
+			    int objc, Tcl_Obj *const objv[]);
 
 enum {
-  boundsCmd, getCmd, offsetCmd, setCmd, updateCmd, versionCmd
+    boundsCmd, getCmd, offsetCmd, setCmd, updateCmd, versionCmd
 };
 static char *subcommands[] = {
-  "bounds", "get", "offset", "set", "update", "version", NULL
+    "bounds", "get", "offset", "set", "update", "version", NULL
 };
 static shapeCommandHandler shapeCommandHandlers[] = {
-  shapeBoundClipOps, shapeBoundClipOps,
-  shapeOffsetOp, shapeSetUpdateOps, shapeSetUpdateOps,
-  NULL
+    shapeBoundClipOps, shapeBoundClipOps,
+    shapeOffsetOp, shapeSetUpdateOps, shapeSetUpdateOps,
+    NULL
 };
-
 
-/*
- * Minor design note; I use K&R style function definition headers
- * despite being very keen on ANSI-C everywhere else.  This is because
- * it is far easier to write and document function headers in the K&R
- * style...
- */
-
 static Tk_Window
-getWindow(apptkwin, interp, pathName, isToplevel)
-     Tk_Window apptkwin;
-     Tcl_Interp *interp;
-     Tcl_Obj *pathName;
-     int *isToplevel;
+getWindow(
+    Tk_Window apptkwin,
+    Tcl_Interp *interp,
+    Tcl_Obj *pathName,
+    int *isToplevel)
 {
     char *winName   = Tcl_GetStringFromObj(pathName, NULL);
     Tk_Window tkwin = Tk_NameToWindow(interp, winName, apptkwin);
@@ -123,28 +107,26 @@ getWindow(apptkwin, interp, pathName, isToplevel)
     *isToplevel = Tk_IsTopLevel(tkwin);
     return tkwin;
 }
-
 
-
 static int
-shapeBoundClipOps(tkwin0, interp, opnum, objc, objv)
-     Tk_Window tkwin0;
-     Tcl_Interp *interp;
-     int opnum, objc;
-     Tcl_Obj *CONST objv[];
+shapeBoundClipOps(
+    Tk_Window tkwin0,
+    Tcl_Interp *interp,
+    int opnum,
+    int objc,
+    Tcl_Obj *const objv[])
 {
     static char *options[] = {
 	"-bounding", "-clip", NULL
     };
-    int idx = 0,toplevel;
+    int idx = 0, toplevel;
     Tk_Window tkwin;
 
-    if (objc<3||objc>4) {
+    if (objc < 3 || objc > 4) {
 	Tcl_WrongNumArgs(interp, 2, objv, "pathName ?-bounding/-clip?");
 	return TCL_ERROR;
-    } else if (objc==4 &&
-	       Tcl_GetIndexFromObj(interp, objv[3], options, "option", 0,
-				   &idx) != TCL_OK) {
+    } else if (objc == 4 && Tcl_GetIndexFromObj(interp, objv[3], options,
+	    "option", 0, &idx) != TCL_OK) {
 	return TCL_ERROR;
     }
     tkwin = getWindow(tkwin0, interp, objv[2], &toplevel);
@@ -156,7 +138,8 @@ shapeBoundClipOps(tkwin0, interp, opnum, objc, objv)
     case boundsCmd: {
 	int x1, y1, x2, y2, valid;
 
-	if (Shape_GetBbox(interp,tkwin,idx,&valid,&x1,&y1,&x2,&y2) != TCL_OK) {
+	if (Shape_GetBbox(interp, tkwin, idx, &valid, &x1, &y1, &x2,
+		&y2) != TCL_OK) {
 	    return TCL_ERROR;
 	}
 	if (valid) {
@@ -171,9 +154,11 @@ shapeBoundClipOps(tkwin0, interp, opnum, objc, objv)
 	return TCL_OK;
     }
     case getCmd:
-	/* Would have to hard-code the fact that freeing is done with
+	/*
+	 * Would have to hard-code the fact that freeing is done with
 	 * XFree() or something equally grotty in order to not push
-	 * Objs into *this* interface... <sigh> */
+	 * Objs into *this* interface... <sigh>
+	 */
 	return Shape_GetShapeRectanglesObj(interp, tkwin, idx);
     default: /* should be impossible to get here! */
 	panic("unexpected operation number %d", opnum);
@@ -181,46 +166,51 @@ shapeBoundClipOps(tkwin0, interp, opnum, objc, objv)
 }
 
 static int
-shapeOffsetOp(tkwin0, interp, opnum, objc, objv)
-     Tk_Window tkwin0;
-     Tcl_Interp *interp;
-     int opnum, objc;
-     Tcl_Obj *CONST objv[];
+shapeOffsetOp(
+    Tk_Window tkwin0,
+    Tcl_Interp *interp,
+    int opnum,
+    int objc,
+    Tcl_Obj *const objv[])
 {
     static char *opts[] = {
 	"-bounding", "-clip", "-both", NULL
     };
-    int x,y,toplevel, i = SHAPE_KIND_BOTH-1;
+    int x, y, toplevel, i = SHAPE_KIND_BOTH - 1;
     Tk_Window tkwin;
 
     /* Argument parsing */
     switch (objc) {
     default:
         Tcl_WrongNumArgs(interp, 2, objv,
-			 "pathName ?-bounding/-clip/-both? x y");
+		"pathName ?-bounding/-clip/-both? x y");
 	return TCL_ERROR;
     case 6:
         if (Tcl_GetIndexFromObj(interp, objv[3], opts, "option", 0,
-				&i) != TCL_OK) {
+		&i) != TCL_OK) {
 	    return TCL_ERROR;
 	}
     case 5:
-        tkwin = getWindow(tkwin0, interp, objv[2], &toplevel);
+	tkwin = getWindow(tkwin0, interp, objv[2], &toplevel);
 	if (tkwin == NULL ||
-	    Tcl_GetIntFromObj(interp, objv[objc-2], &x) != TCL_OK ||
-	    Tcl_GetIntFromObj(interp, objv[objc-1], &y) != TCL_OK) {
+		Tcl_GetIntFromObj(interp, objv[objc-2], &x) != TCL_OK ||
+		Tcl_GetIntFromObj(interp, objv[objc-1], &y) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	return Shape_MoveShape(interp, tkwin, encodeKind(i+1, toplevel), x, y);
     }
+    return Shape_MoveShape(interp, tkwin, encodeKind(i+1, toplevel), x, y);
 }
 
 static int
-shapeBitmap(tkwin, interp, x, y, op, kind, objc, objv)
-     Tk_Window tkwin;
-     Tcl_Interp *interp;
-     int x, y, op, kind, objc;
-     Tcl_Obj *CONST objv[];
+shapeBitmap(
+    Tk_Window tkwin,
+    Tcl_Interp *interp,
+    int x,
+    int y,
+    int op,
+    int kind,
+    int objc,
+    Tcl_Obj *const objv[])
 {
     char *bmap_name;
     Pixmap bmap;
@@ -228,7 +218,7 @@ shapeBitmap(tkwin, interp, x, y, op, kind, objc, objv)
 
     if (objc != 1) {
 	Tcl_AppendResult(interp, "bitmap requires one argument; a bitmap "
-			 "name", NULL);
+		"name", NULL);
 	return TCL_ERROR;
     }
 
@@ -246,19 +236,23 @@ shapeBitmap(tkwin, interp, x, y, op, kind, objc, objv)
 }
 
 static int
-shapeRects(tkwin, interp, x, y, op, kind, objc, objv)
-     Tk_Window tkwin;
-     Tcl_Interp *interp;
-     int x, y, op, kind, objc;
-     Tcl_Obj *CONST objv[];
+shapeRects(
+    Tk_Window tkwin,
+    Tcl_Interp *interp,
+    int x,
+    int y,
+    int op,
+    int kind,
+    int objc,
+    Tcl_Obj *const objv[])
 {
     Tcl_Obj **ovec;
     XRectangle *rects;
-    int count,i,result;
+    int count, i, result;
 
     if (objc != 1) {
 	Tcl_AppendResult(interp, "rectangles requires one argument; "
-			 "a list of rectangles", NULL);
+		"a list of rectangles", NULL);
 	return TCL_ERROR;
     }
 
@@ -269,45 +263,49 @@ shapeRects(tkwin, interp, x, y, op, kind, objc, objv)
 	return TCL_ERROR;
     }
 
-    rects = (XRectangle *)Tcl_Alloc(sizeof(XRectangle)*count);
+    rects = (XRectangle *) Tcl_Alloc(sizeof(XRectangle) * count);
     for (i=0 ; i<count ; i++) {
-	int x1,y1,x2,y2;
+	int x1, y1, x2, y2;
 	Tcl_Obj **rvec;
 	int rlen;
 
 	if (Tcl_ListObjGetElements(interp, ovec[i], &rlen, &rvec) != TCL_OK) {
 	    Tcl_Free((char *)rects);
 	    return TCL_ERROR;
-	} else if (rlen!=4) {
+	} else if (rlen != 4) {
 	    Tcl_AppendResult(interp, "rectangles are described by four "
-			     "numbers; x1, y1, x2, and y2", NULL);
-	    Tcl_Free((char *)rects);
+		    "numbers; x1, y1, x2, and y2", NULL);
+	    Tcl_Free((char *) rects);
 	    return TCL_ERROR;
 	} else if (Tcl_GetIntFromObj(interp, rvec[0], &x1) != TCL_OK ||
-		   Tcl_GetIntFromObj(interp, rvec[1], &y1) != TCL_OK ||
-		   Tcl_GetIntFromObj(interp, rvec[2], &x2) != TCL_OK ||
-		   Tcl_GetIntFromObj(interp, rvec[3], &y2) != TCL_OK) {
-	    Tcl_Free((char *)rects);
+		Tcl_GetIntFromObj(interp, rvec[1], &y1) != TCL_OK ||
+		Tcl_GetIntFromObj(interp, rvec[2], &x2) != TCL_OK ||
+		Tcl_GetIntFromObj(interp, rvec[3], &y2) != TCL_OK) {
+	    Tcl_Free((char *) rects);
 	    return TCL_ERROR;
 	}
-	rects[i].x = min(x1,x2);
-	rects[i].y = min(y1,y2);
+	rects[i].x = min(x1, x2);
+	rects[i].y = min(y1, y2);
 	rects[i].width  = max(x1-x2, x2-x1) + 1;
 	rects[i].height = max(y1-y2, y2-y1) + 1;
     }
 
     result = Shape_CombineRectangles(interp, tkwin, kind, op, count, rects);
 
-    Tcl_Free((char *)rects);
+    Tcl_Free((char *) rects);
     return result;
 }
 
 static int
-shapeReset(tkwin, interp, x, y, op, kind, objc, objv)
-     Tk_Window tkwin;
-     Tcl_Interp *interp;
-     int x, y, op, kind, objc;
-     Tcl_Obj *CONST objv[];
+shapeReset(
+    Tk_Window tkwin,
+    Tcl_Interp *interp,
+    int x,
+    int y,
+    int op,
+    int kind,
+    int objc,
+    Tcl_Obj *const objv[])
 {
     if (objc != 0) {
 	Tcl_AppendResult(interp, "reset takes no arguments", NULL);
@@ -318,42 +316,52 @@ shapeReset(tkwin, interp, x, y, op, kind, objc, objv)
 }
 
 static int
-shapeText(tkwin, interp, x, y, op, kind, objc, objv)
-     Tk_Window tkwin;
-     Tcl_Interp *interp;
-     int x, y, op, kind, objc;
-     Tcl_Obj *CONST objv[];
+shapeText(
+    Tk_Window tkwin,
+    Tcl_Interp *interp,
+    int x,
+    int y,
+    int op,
+    int kind,
+    int objc,
+    Tcl_Obj *const objv[])
 {
     XRectangle *rects;
     int count, result;
 
     if (objc != 2) {
 	Tcl_AppendResult(interp, "text requires two arguments; the string "
-			 "to display and the font to use to display it",
-			 NULL);
+		"to display and the font to use to display it", NULL);
 	return TCL_ERROR;
     }
 
     rects = ShapeRenderTextAsRectangles(tkwin, interp, objv[0], objv[1],
-					&count);
+	    &count);
     if (rects == NULL) {
 	return TCL_ERROR;
     }
 
-    /* Now we've got a set of rectangles, we can apply it... */
-    result = Shape_CombineRectanglesOrdered(interp, tkwin, kind, op,
-					    count, rects);
+    /*
+     * Now we've got a set of rectangles, we can apply it...
+     */
 
-    Tcl_Free((char *)rects);
+    result = Shape_CombineRectanglesOrdered(interp, tkwin, kind, op,
+	    count, rects);
+
+    Tcl_Free((char *) rects);
     return result;
 }
 
 static int
-shapeWindow(tkwin, interp, x, y, op, kind, objc, objv)
-     Tk_Window tkwin;
-     Tcl_Interp *interp;
-     int x, y, op, kind, objc;
-     Tcl_Obj *CONST objv[];
+shapeWindow(
+    Tk_Window tkwin,
+    Tcl_Interp *interp,
+    int x,
+    int y,
+    int op,
+    int kind,
+    int objc,
+    Tcl_Obj *const objv[])
 {
     Tk_Window srcwin;
     int ignore, result;
@@ -361,9 +369,11 @@ shapeWindow(tkwin, interp, x, y, op, kind, objc, objv)
 
     if (objc != 1) {
 	Tcl_AppendResult(interp, "window requires one argument; a window "
-			 "pathName", NULL);
+		"pathName", NULL);
 	return TCL_ERROR;
-    } else if ((srcwin=getWindow(tkwin, interp, objv[0], &ignore)) == None) {
+    }
+    srcwin = getWindow(tkwin, interp, objv[0], &ignore);
+    if (srcwin == None) {
 	return TCL_ERROR;
     }
 
@@ -372,11 +382,15 @@ shapeWindow(tkwin, interp, x, y, op, kind, objc, objv)
 
 #ifdef SUPPORTS_PHOTO_REGION
 static int
-shapePhoto(tkwin, interp, x, y, op, kind, objc, objv)
-     Tk_Window tkwin;
-     Tcl_Interp *interp;
-     int x, y, op, kind, objc;
-     Tcl_Obj *CONST objv[];
+shapePhoto(
+    Tk_Window tkwin,
+    Tcl_Interp *interp,
+    int x,
+    int y,
+    int op,
+    int kind,
+    int objc,
+    Tcl_Obj *const objv[])
 {
     char *imageName;
     Tk_PhotoHandle handle;
@@ -384,7 +398,7 @@ shapePhoto(tkwin, interp, x, y, op, kind, objc, objv)
 
     if (objc != 1) {
 	Tcl_AppendResult(interp, "photo requires one argument; "
-			 "a photo image name", NULL);
+		"a photo image name", NULL);
 	return TCL_ERROR;
     }
 
@@ -394,13 +408,16 @@ shapePhoto(tkwin, interp, x, y, op, kind, objc, objv)
 	return TCL_ERROR;
     }
 
-    /* Deep implementation magic!  Relies on knowing a TkRegion is
-     * implemented as a Region under X... */
-    region = (Region)TkPhotoGetValidRegion(handle);
+    /*
+     * Deep implementation magic!  Relies on knowing a TkRegion is
+     * implemented as a Region under X...
+     */
+
+    region = (Region) TkPhotoGetValidRegion(handle);
 
     if (region == None) {
 	Tcl_AppendResult(interp, "bad transparency info in photo image ",
-			 imageName, NULL);
+		imageName, NULL);
 	return TCL_ERROR;
     }
 
@@ -409,11 +426,12 @@ shapePhoto(tkwin, interp, x, y, op, kind, objc, objv)
 #endif
 
 static int
-shapeSetUpdateOps(tkwin0, interp, opnum, objc, objv)
-     Tk_Window tkwin0;
-     Tcl_Interp *interp;
-     int opnum, objc;
-     Tcl_Obj *CONST objv[];
+shapeSetUpdateOps(
+    Tk_Window tkwin0,
+    Tcl_Interp *interp;
+    int opnum,
+    int objc,
+    Tcl_Obj *const objv[])
 {
     enum optkind {
 	shapekind, offsetargs, sourceargs
@@ -423,7 +441,7 @@ shapeSetUpdateOps(tkwin0, interp, opnum, objc, objv)
 	"-bounding", "-clip", "-both",
 	"bitmap", "rectangles", "reset", "text", "window",
 #ifdef SUPPORTS_PHOTO_REGION
-	"photo"
+	"photo",
 #endif
 	NULL
     };
@@ -432,7 +450,7 @@ shapeSetUpdateOps(tkwin0, interp, opnum, objc, objv)
 	shapekind, shapekind, shapekind,
 	sourceargs, sourceargs, sourceargs, sourceargs, sourceargs
 #ifdef SUPPORTS_PHOTO_REGION
-	sourceargs
+	, sourceargs
 #endif
     };
     static shapeApplicator applicators[] = {
@@ -445,13 +463,12 @@ shapeSetUpdateOps(tkwin0, interp, opnum, objc, objv)
     };
 
     int operation = ShapeSet;
-
-    int idx, kind, x=0, y=0, toplevel, opidx;
+    int idx, kind, x = 0, y = 0, toplevel, opidx;
     Tk_Window tkwin;
 
     switch (opnum) {
     case setCmd:
-	if (objc<3) {
+	if (objc < 3) {
 	    Tcl_WrongNumArgs(interp, 1, objv, "set pathName ?options?");
 	    return TCL_ERROR;
 	}
@@ -469,14 +486,14 @@ shapeSetUpdateOps(tkwin0, interp, opnum, objc, objv)
 	    SHAPE_OP_SET,       SHAPE_OP_UNION,     SHAPE_OP_INTERSECT
 	};
 
-	if (objc<4) {
+	if (objc < 4) {
 	    Tcl_WrongNumArgs(interp, 1, objv,
-			     "update pathName operation ?options?");
+		    "update pathName operation ?options?");
 	    return TCL_ERROR;
 	}
 
-	if (Tcl_GetIndexFromObj(interp, objv[3], operations,
-				"operation", 0, &opidx) != TCL_OK) {
+	if (Tcl_GetIndexFromObj(interp, objv[3], operations, "operation", 0,
+		&opidx) != TCL_OK) {
 	    return TCL_ERROR;
 	}
 	operation = opmap[opidx];
@@ -494,8 +511,8 @@ shapeSetUpdateOps(tkwin0, interp, opnum, objc, objv)
     kind = encodeKind(SHAPE_KIND_BOTH, toplevel);
 
     for (; idx<objc ; idx++) {
-	if (Tcl_GetIndexFromObj(interp, objv[idx], options,
-				"option", 0, &opidx) != TCL_OK) {
+	if (Tcl_GetIndexFromObj(interp, objv[idx], options, "option", 0,
+		&opidx) != TCL_OK) {
 	    return TCL_ERROR;
 	}
 	switch (optk[opidx]) {
@@ -503,12 +520,12 @@ shapeSetUpdateOps(tkwin0, interp, opnum, objc, objv)
 	    kind = encodeKind(opidx, toplevel);
 	    break;
 	case offsetargs:
-	    if (idx+2 >= objc) {
+	    if (idx + 2 >= objc) {
 		Tcl_AppendResult(interp, "-offset reqires two args; x and y",
-				 NULL);
+			NULL);
 		return TCL_ERROR;
 	    } else if (Tcl_GetIntFromObj(interp, objv[idx+1], &x) != TCL_OK ||
-		       Tcl_GetIntFromObj(interp, objv[idx+2], &y) != TCL_OK) {
+		    Tcl_GetIntFromObj(interp, objv[idx+2], &y) != TCL_OK) {
 		return TCL_ERROR;
 	    }
 	    idx += 2;
@@ -516,8 +533,8 @@ shapeSetUpdateOps(tkwin0, interp, opnum, objc, objv)
 	case sourceargs: {
 	    shapeApplicator app = applicators[opidx];
 	    if (app != NULL) {
-		objc -= idx+1;
-		objv += idx+1;
+		objc -= idx + 1;
+		objv += idx + 1;
 		return app(tkwin, interp, x, y, operation, kind, objc, objv);
 	    }
 	    Tcl_AppendResult(interp, "not supported", NULL);
@@ -530,34 +547,34 @@ shapeSetUpdateOps(tkwin0, interp, opnum, objc, objv)
 }
 
 static int
-shapeCmd(clientData, interp, objc, objv)
-     ClientData clientData;
-     Tcl_Interp *interp;
-     int objc;
-     Tcl_Obj *CONST objv[];
+shapeCmd(
+    ClientData clientData,
+    Tcl_Interp *interp,
+    int objc,
+    Tcl_Obj *const objv[])
 {
     int subcmdidx;
 
-    if (objc<2) {
+    if (objc < 2) {
 	Tcl_WrongNumArgs(interp, 1, objv, "subcommand ?window arg ...?");
 	return TCL_ERROR;
     } else if (Tcl_GetIndexFromObj(interp, objv[1], subcommands, "subcommand",
-				   0, &subcmdidx) != TCL_OK) {
+	    0, &subcmdidx) != TCL_OK) {
 	return TCL_ERROR;
     }
 
     if (shapeCommandHandlers[subcmdidx]) {
 	/* Farm out the more complex operations */
 	return shapeCommandHandlers[subcmdidx](clientData, interp, subcmdidx,
-					       objc, objv);
+		objc, objv);
     } else switch (subcmdidx) {  
     case versionCmd:
 	/* shape version */
-	if (objc!=2) {
+	if (objc != 2) {
 	    Tcl_WrongNumArgs(interp, 1, objv, "version");
 	    return TCL_ERROR;
 	} else {
-	    int major=-1, minor=-1;
+	    int major = -1, minor = -1;
 	    char buffer[64];
 
 	    if (Shape_QueryVersion((Tk_Window)clientData, &major, &minor)) {
@@ -573,8 +590,8 @@ shapeCmd(clientData, interp, objc, objv)
 }
 
 int
-Shape_Init(interp)
-     Tcl_Interp *interp;
+Shape_Init(
+    Tcl_Interp *interp)
 {
     Tk_Window tkwin = Tk_MainWindow(interp);
 
@@ -583,7 +600,7 @@ Shape_Init(interp)
     }
     if (!Shape_ExtensionPresent(tkwin)) {
 	Tcl_AppendResult(interp, "shaped window extension not supported on "
-			 "this X server", NULL);
+		"this X server", NULL);
 	return TCL_ERROR;
     }
 
@@ -593,7 +610,3 @@ Shape_Init(interp)
     Tcl_SetVar(interp, "shape_patchLevel", SHAPE_PATCHLEVEL, TCL_GLOBAL_ONLY);
     return Tcl_PkgProvide(interp, "shape", SHAPE_VERSION);
 }
-
-/*
- * $Log$
- */

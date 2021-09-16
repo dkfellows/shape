@@ -8,8 +8,6 @@
  *
  * See "license.txt" for details of the license this file is made
  * available under.
- *
- * $Id$
  */
 
 #include <windows.h>
@@ -27,27 +25,25 @@ applyOperationToToplevelParent = 1;
 #define CLASSSIZE 23
 #define RECTCOUNT 64
 
-static int getHWNDs _ANSI_ARGS_((Tcl_Interp*, Tk_Window, int, HWND*, HWND*));
-static int setHRGN _ANSI_ARGS_((Tcl_Interp*, char*, HWND, HWND, int, int,
-				HRGN));
-static int invertHRGN _ANSI_ARGS_((Tcl_Interp*, char*, HWND, HWND, int, int,
-				   int, int));
-static int mixHRGN _ANSI_ARGS_((Tcl_Interp*, char*, HWND, HWND, int, int, int,
-				HRGN));
+static int getHWNDs(Tcl_Interp*, Tk_Window, int, HWND*, HWND*);
+static int setHRGN(Tcl_Interp*, char*, HWND, HWND, int, int, HRGN);
+static int invertHRGN(Tcl_Interp*, char*, HWND, HWND, int, int, int, int);
+static int mixHRGN(Tcl_Interp*, char*, HWND, HWND, int, int, int, HRGN);
 
 static int
-getHWNDs(interp, tkwin, kind, window, parent)
-     Tcl_Interp *interp;
-     Tk_Window tkwin;
-     int kind;
-     HWND *window, *parent;
+getHWNDs(
+    Tcl_Interp *interp,
+    Tk_Window tkwin;
+    int kind;
+    HWND *window,
+    HWND *parent)
 {
     Window w = Tk_WindowId(tkwin);
     HWND hwnd;
 
     if (w == None) {
 	Tcl_AppendResult(interp, "window \"", Tk_PathName(tkwin),
-			 "\" does not properly exist", NULL);
+		"\" does not properly exist", NULL);
 	return TCL_ERROR;
     }
     *window = hwnd = Tk_GetHWND(w);
@@ -60,13 +56,12 @@ getHWNDs(interp, tkwin, kind, window, parent)
 	TCHAR myname[CLASSSIZE+1];
 
 	while ((returnval = GetClassName(hwnd, myname, CLASSSIZE)) != 0 &&
-	       strcmp(myname, "TkTopLevel") != 0) {
+		strcmp(myname, "TkTopLevel") != 0) {
 	    hwnd = GetParent(hwnd);
 	    if (hwnd == NULL) {
 	        TclWinConvertError(GetLastError());
 		Tcl_AppendResult(interp, "parental window search for "
-				 "window \"", Tk_PathName(tkwin), "\" failed",
-				 NULL);
+			"window \"", Tk_PathName(tkwin), "\" failed", NULL);
 		return TCL_ERROR;
 	    }
 	}
@@ -74,8 +69,7 @@ getHWNDs(interp, tkwin, kind, window, parent)
 	if (returnval == 0) {
 	    TclWinConvertError(GetLastError());
 	    Tcl_AppendResult(interp, "parental classname determinisation ",
-			     "for window \"", Tk_PathName(tkwin), "\" failed",
-			     NULL);
+		    "for window \"", Tk_PathName(tkwin), "\" failed", NULL);
 	    return TCL_ERROR;
 	}
 
@@ -87,35 +81,39 @@ getHWNDs(interp, tkwin, kind, window, parent)
     return TCL_OK;
 }
 
-/* Note that this code assumes that we *own* the region; no other code
- * must reference it after this function returns! */
+/*
+ * Note that this code assumes that we *own* the region; no other code
+ * must reference it after this function returns!
+ */
 int
-setHRGN(interp, pathname, window, parent, x, y, region)
-     Tcl_Interp *interp;
-     char *pathname;
-     HWND window, parent;
-     int x, y;
-     HRGN region;
+setHRGN(
+    Tcl_Interp *interp,
+    char *pathname,
+    HWND window,
+    HWND parent,
+    int x,
+    int y,
+    HRGN region)
 {
     HRGN tmp;
-    if ((x!=0 || y!=0) && OffsetRgn(region, x, y) == ERROR) {
+
+    if ((x != 0 || y != 0) && OffsetRgn(region, x, y) == ERROR) {
         TclWinConvertError(GetLastError());
 	DeleteObject(region);
-	Tcl_AppendResult(interp, "could not apply offset to region",
-			 NULL);
+	Tcl_AppendResult(interp, "could not apply offset to region", NULL);
 	return TCL_ERROR;
     }
     if (SetWindowRgn(window, region, TRUE) == 0) {
         TclWinConvertError(GetLastError());
         DeleteObject(region);
         Tcl_AppendResult(interp, "set region failed for \"", pathname, "\"",
-			 NULL);
+		NULL);
 	return TCL_ERROR;
     }
     if (parent == NULL) {
         return TCL_OK;
     }
-    tmp = (HRGN)TkCreateRegion();
+    tmp = (HRGN) TkCreateRegion();
     if (CombineRgn(tmp, region, tmp, RGN_COPY) == ERROR) {
         TclWinConvertError(GetLastError());
         DeleteObject(tmp);
@@ -125,18 +123,22 @@ setHRGN(interp, pathname, window, parent, x, y, region)
     if (SetWindowRgn(parent, tmp, TRUE) == 0) {
         TclWinConvertError(GetLastError());
         Tcl_AppendResult(interp, "set region failed for outer shell of \"",
-			 pathname, "\"", NULL);
+		pathname, "\"", NULL);
 	return TCL_ERROR;
     }
     return TCL_OK;
 }
 
 static int
-invertHRGN(interp, pathname, window, parent, w, h, x, y)
-     Tcl_Interp *interp;
-     char *pathname;
-     HWND window, parent;
-     int w, h, x, y;
+invertHRGN(
+    Tcl_Interp *interp,
+    char *pathname,
+    HWND window,
+    HWND parent,
+    int w,
+    int h,
+    int x,
+    int y)
 {
     HRGN region = (HRGN)TkCreateRegion();
     HRGN tmp;
@@ -145,7 +147,7 @@ invertHRGN(interp, pathname, window, parent, w, h, x, y)
         TclWinConvertError(GetLastError());
         DeleteObject(region);
 	Tcl_AppendResult(interp, "could not read existing region of \"",
-			 pathname, "\"", NULL);
+		pathname, "\"", NULL);
 	return TCL_ERROR;
     }        
     tmp = CreateRectRgn(0, 0, w-1, h-1); /* assume *this* works... */
@@ -157,29 +159,28 @@ invertHRGN(interp, pathname, window, parent, w, h, x, y)
 	return TCL_ERROR;
     }
     DeleteObject(region);
-    if ((x!=0 || y!=0) && OffsetRgn(tmp, x, y)==ERROR) {
+    if ((x != 0 || y != 0) && OffsetRgn(tmp, x, y)==ERROR) {
         TclWinConvertError(GetLastError());
 	DeleteObject(tmp);
-	Tcl_AppendResult(interp, "could not apply offset to region",
-			 NULL);
+	Tcl_AppendResult(interp, "could not apply offset to region", NULL);
 	return TCL_ERROR;
     }
     if (SetWindowRgn(window, tmp, TRUE) == 0) {
         TclWinConvertError(GetLastError());
         Tcl_AppendResult(interp, "set region failed for \"", pathname, "\"",
-			 NULL);
+		NULL);
 	return TCL_ERROR;
     }
     if (parent == NULL) {
         return TCL_OK;
     }
 
-    region = (HRGN)TkCreateRegion();
+    region = (HRGN) TkCreateRegion();
     if (GetWindowRgn(parent, region) == ERROR) {
         TclWinConvertError(GetLastError());
         DeleteObject(region);
 	Tcl_AppendResult(interp, "could not read existing region of "
-			 "outer shell of \"", pathname, "\"", NULL);
+		"outer shell of \"", pathname, "\"", NULL);
 	return TCL_ERROR;
     }        
     tmp = CreateRectRgn(0, 0, w-1, h-1); /* assume *this* works... */
@@ -191,46 +192,47 @@ invertHRGN(interp, pathname, window, parent, w, h, x, y)
 	return TCL_ERROR;
     }
     DeleteObject(region);
-    if ((x!=0 || y!=0) && OffsetRgn(tmp, x, y)==ERROR) {
+    if ((x != 0 || y != 0) && OffsetRgn(tmp, x, y)==ERROR) {
         TclWinConvertError(GetLastError());
 	DeleteObject(tmp);
-	Tcl_AppendResult(interp, "could not apply offset to region",
-			 NULL);
+	Tcl_AppendResult(interp, "could not apply offset to region", NULL);
 	return TCL_ERROR;
     }
     if (SetWindowRgn(w, tmp, TRUE) == 0) {
         TclWinConvertError(GetLastError());
         Tcl_AppendResult(interp, "set region failed for outer shell of \"",
-			 pathname, "\"", NULL);
+		pathname, "\"", NULL);
 	return TCL_ERROR;
     }
     return TCL_OK;
 }
 
 static int
-mixHRGN(interp, pathname, window, parent, op, x, y, region)
-     Tcl_Interp *interp;
-     char *pathname;
-     HWND window, parent;
-     int op, x, y;
-     HRGN region;
+mixHRGN(
+    Tcl_Interp *interp,
+    char *pathname,
+    HWND window,
+    HWND parent,
+    int op,
+    int x,
+    int y,
+    HRGN region)
 {
     HRGN tmp;
-    if ((x!=0 || y!=0) && OffsetRgn(region, x, y)==ERROR) {
+    if ((x != 0 || y != 0) && OffsetRgn(region, x, y)==ERROR) {
         TclWinConvertError(GetLastError());
 	DeleteObject(region);
-	Tcl_AppendResult(interp, "could not apply offset to region",
-			 NULL);
+	Tcl_AppendResult(interp, "could not apply offset to region", NULL);
 	return TCL_ERROR;
     }
 
-    tmp = (HRGN)TkCreateRegion();
+    tmp = (HRGN) TkCreateRegion();
     if (GetWindowRgn(window, tmp) == ERROR) {
         TclWinConvertError(GetLastError());
         DeleteObject(tmp);
 	DeleteObject(region);
 	Tcl_AppendResult(interp, "could not read existing region of "
-			 "outer shell of \"", pathname, "\"", NULL);
+		"outer shell of \"", pathname, "\"", NULL);
         return TCL_ERROR;
     }
     if (CombineRgn(tmp, region, tmp, op) == ERROR) {
@@ -245,7 +247,7 @@ mixHRGN(interp, pathname, window, parent, op, x, y, region)
         DeleteObject(tmp);
         DeleteObject(region);
         Tcl_AppendResult(interp, "set region failed for \"", pathname, "\"",
-			 NULL);
+		NULL);
 	return TCL_ERROR;
     }
 
@@ -254,13 +256,13 @@ mixHRGN(interp, pathname, window, parent, op, x, y, region)
         return TCL_OK;
     }
 
-    tmp = (HRGN)TkCreateRegion();
+    tmp = (HRGN) TkCreateRegion();
     if (GetWindowRgn(parent, tmp) == ERROR) {
         TclWinConvertError(GetLastError());
         DeleteObject(tmp);
 	DeleteObject(region);
 	Tcl_AppendResult(interp, "could not read existing region of "
-			 "outer shell of \"", pathname, "\"", NULL);
+		"outer shell of \"", pathname, "\"", NULL);
         return TCL_ERROR;
     }
     if (CombineRgn(tmp, region, tmp, op) == ERROR) {
@@ -275,21 +277,24 @@ mixHRGN(interp, pathname, window, parent, op, x, y, region)
         TclWinConvertError(GetLastError());
         DeleteObject(tmp);
         Tcl_AppendResult(interp, "set region failed for outer shell of \"",
-			 pathname, "\"", NULL);
+		pathname, "\"", NULL);
 	return TCL_ERROR;
     }
     return TCL_OK;
 }
 
-/* Assume that we can deallocate region. Callers must duplicate if
- * necessary! */
+/*
+ * Assume that we can deallocate region. Callers must duplicate if
+ * necessary!
+ */
 int
-ShapeCombineHRGN(interp, tkwin, kind, op, x, y, region)
-     Tcl_Interp *interp;
-     Tk_Window tkwin;
-     int kind, op;
-     int x, y; /* Ignored, for now... */
-     HRGN region;
+ShapeCombineHRGN(
+    Tcl_Interp *interp,
+    Tk_Window tkwin,
+    int kind,
+    int op,
+    int x, int y,	/* Ignored, for now... */
+    HRGN region)
 {
     HWND w, parent;
 
@@ -302,20 +307,20 @@ ShapeCombineHRGN(interp, tkwin, kind, op, x, y, region)
         /* region ignored, so delete! */
         DeleteObject(region);
         return invertHRGN(interp, Tk_PathName(tkwin), w, parent,
-			  Tk_Width(tkwin), Tk_Height(tkwin), x, y);
+		Tk_Width(tkwin), Tk_Height(tkwin), x, y);
 
     case ShapeSet:
         return setHRGN(interp, Tk_PathName(tkwin), w, parent, x, y, region);
 
     case ShapeUnion:
         return mixHRGN(interp, Tk_PathName(tkwin), w, parent, RGN_OR, x, y,
-		       region);
+		region);
     case ShapeIntersect:
         return mixHRGN(interp, Tk_PathName(tkwin), w, parent, RGN_AND, x, y,
-		       region);
+		region);
     case ShapeSubtract:
         return mixHRGN(interp, Tk_PathName(tkwin), w, parent, RGN_DIFF, x, y,
-		       region);
+		region);
     default:
 	Tcl_AppendResult(interp, "unknown operation code", NULL);
         /* region ignored, so delete! */
@@ -325,11 +330,11 @@ ShapeCombineHRGN(interp, tkwin, kind, op, x, y, region)
 }
 
 HRGN
-ShapeAddDataToRegion(interp, region, data, size)
-     Tcl_Interp *interp;
-     HRGN region;
-     LPRGNDATA data;
-     int size;
+ShapeAddDataToRegion(
+    Tcl_Interp *interp,
+    HRGN region,
+    LPRGNDATA data,
+    int size)
 {
     HRGN tmp;
 
@@ -348,17 +353,19 @@ ShapeAddDataToRegion(interp, region, data, size)
 }
 
 int
-Shape_CombineRectangles(interp, tkwin, kind, op, rectc, rectv)
-     Tcl_Interp *interp;
-     Tk_Window tkwin;
-     int kind, op, rectc;
-     XRectangle *rectv;
+Shape_CombineRectangles(
+    Tcl_Interp *interp,
+    Tk_Window tkwin,
+    int kind,
+    int op,
+    int rectc,
+    XRectangle *rectv)
 {
     int i, j;
     HRGN region = NULL, tmprgn;
-    int size = sizeof(RGNDATAHEADER)+RECTCOUNT*sizeof(RECT);
-    LPRGNDATA data = (LPRGNDATA)Tcl_Alloc(size);
-    LPRECT rects = (RECT *)(data->Buffer);
+    int size = sizeof(RGNDATAHEADER) + RECTCOUNT*sizeof(RECT);
+    LPRGNDATA data = (LPRGNDATA) Tcl_Alloc(size);
+    LPRECT rects = (RECT *) data->Buffer;
 
     data->rdh.dwSize = sizeof(data->rdh);
     data->rdh.nRgnSize = 0;
@@ -368,10 +375,10 @@ Shape_CombineRectangles(interp, tkwin, kind, op, rectc, rectv)
     data->rdh.rcBound.bottom = Tk_Height(tkwin)-1;
 
     for (i=j=0 ; i<rectc ; i++,j++) {
-	if (j==RECTCOUNT) {
+	if (j == RECTCOUNT) {
 	    region = ShapeAddDataToRegion(interp, region, data, size);
 	    if (region == NULL) {
-		Tcl_Free((char *)data);
+		Tcl_Free((char *) data);
 		return TCL_ERROR;
 	    }
 	    j = 0;
@@ -395,25 +402,32 @@ Shape_CombineRectangles(interp, tkwin, kind, op, rectc, rectv)
 
 /* No efficiency gain here for windows AFAICT... */
 int
-Shape_CombineRectanglesOrdered(interp, tkwin, kind, op, rectc, rectv)
-     Tcl_Interp *interp;
-     Tk_Window tkwin;
-     int kind, op, rectc;
-     XRectangle *rectv;
+Shape_CombineRectanglesOrdered(
+    Tcl_Interp *interp,
+    Tk_Window tkwin,
+    int kind,
+    int op,
+    int rectc,
+    XRectangle *rectv)
 {
     return Shape_CombineRectangles(interp, tkwin, kind, op, rectc, rectv);
 }
 
-/* Must copy the region to prevent problems from unsynchronised use of
- * modifiable regions... */
+/*
+ * Must copy the region to prevent problems from unsynchronised use of
+ * modifiable regions...
+ */
 int
-Shape_CombineRegion(interp, tkwin, kind, op, x, y, region)
-     Tcl_Interp *interp;
-     Tk_Window tkwin;
-     int kind, op, x, y;
-     Region region;
+Shape_CombineRegion(
+    Tcl_Interp *interp,
+    Tk_Window tkwin,
+    int kind,
+    int op,
+    int x,
+    int y,
+    Region region)
 {
-    HRGN tmp = (HRGN)TkCreateRegion();
+    HRGN tmp = (HRGN) TkCreateRegion();
     if (CombineRgn(tmp, region, tmp, RGN_COPY) == ERROR) {
         TclWinConvertError(GetLastError());
 	DeleteObject(tmp);
@@ -424,10 +438,14 @@ Shape_CombineRegion(interp, tkwin, kind, op, x, y, region)
 }
 
 int
-Shape_CombineWindow(interp, tkwin, kind, op, x, y, srcwin)
-     Tcl_Interp *interp;
-     Tk_Window tkwin, srcwin;
-     int kind, op, x, y;
+Shape_CombineWindow(
+    Tcl_Interp *interp,
+    Tk_Window tkwin,
+    Tk_Window srcwin,
+    int kind,
+    int op,
+    int x,
+    int y)
 {
     HWND src;
     HRGN region;
@@ -440,18 +458,20 @@ Shape_CombineWindow(interp, tkwin, kind, op, x, y, srcwin)
         TclWinConvertError(GetLastError());
 	DeleteObject(region);
 	Tcl_AppendResult(interp, "could not read existing window "
-			 "region for ", Tk_PathName(srcwin), "\"", NULL);
+		"region for ", Tk_PathName(srcwin), "\"", NULL);
 	return TCL_ERROR;
     }
     return ShapeCombineHRGN(interp, tkwin, kind, op, x, y, region);
 }
 
-/* I think this does a reset, but the documentation is *not* clear at all. */
+/*
+ * I think this does a reset, but the documentation is *not* clear at all.
+ */
 int
-Shape_Reset(interp, tkwin, kind)
-     Tcl_Interp *interp;
-     Tk_Window window;
-     int kind;
+Shape_Reset(
+    Tcl_Interp *interp,
+    Tk_Window window,
+    int kind)
 {
     HWND window, parent;
 
@@ -461,23 +481,25 @@ Shape_Reset(interp, tkwin, kind)
     if (SetWindowRgn(window, NULL, TRUE) == 0) {
         TclWinConvertError(GetLastError());
         Tcl_AppendResult(interp, "reset region failed for \"",
-			 Tk_PathName(tkwin), "\"", NULL);
+		Tk_PathName(tkwin), "\"", NULL);
 	return TCL_ERROR;
     }
-    if (parent!=NULL && SetWindowRgn(parent, NULL, TRUE)==0) {
+    if (parent != NULL && SetWindowRgn(parent, NULL, TRUE) == 0) {
         TclWinConvertError(GetLastError());
         Tcl_AppendResult(interp, "set region failed for outer shell of \"",
-			 Tk_PathName(tkwin), "\"", NULL);
+		Tk_PathName(tkwin), "\"", NULL);
 	return TCL_ERROR;
     }
     return TCL_OK;
 }
 
 int
-Shape_MoveShape(interp, tkwin, kind, x, y)
-     Tcl_Interp *interp;
-     Tk_Window window;
-     int kind, x, y;
+Shape_MoveShape(
+    Tcl_Interp *interp,
+    Tk_Window window,
+    int kind,
+    int x,
+    int y)
 {
     HWND window, parent;
 
@@ -490,7 +512,7 @@ Shape_MoveShape(interp, tkwin, kind, x, y)
         TclWinConvertError(GetLastError());
 	DeleteObject(region);
 	Tcl_AppendResult(interp, "could not read existing window "
-			 "region for ", Tk_PathName(tkwin), "\"", NULL);
+		"region for ", Tk_PathName(tkwin), "\"", NULL);
 	return TCL_ERROR;
     }
     if (OffsetRegion(region, x, y) == ERROR) {
@@ -503,7 +525,7 @@ Shape_MoveShape(interp, tkwin, kind, x, y)
         TclWinConvertError(GetLastError());
         DeleteObject(region);
 	Tcl_AppendResult(interp, "could not set region of \"",
-			 Tk_PathName(tkwin), "\"", NULL);
+		Tk_PathName(tkwin), "\"", NULL);
 	return TCL_ERROR;
     }
 
@@ -516,22 +538,20 @@ Shape_MoveShape(interp, tkwin, kind, x, y)
         TclWinConvertError(GetLastError());
         DeleteObject(region);
 	Tcl_AppendResult(interp, "could not read existing window region "
-			 "for outer shell of ", Tk_PathName(srcwin),
-			 "\"", NULL);
+		"for outer shell of ", Tk_PathName(srcwin), "\"", NULL);
 	return TCL_ERROR;
     }
     if (OffsetRegion(region, x, y) == ERROR) {
         TclWinConvertError(GetLastError());
         DeleteObject(region);
-	Tcl_AppendResult(interp, "could not apply offset to region",
-			 NULL);
+	Tcl_AppendResult(interp, "could not apply offset to region", NULL);
 	return TCL_ERROR;
     }
     if (SetWindowRgn(parent, region, TRUE) == 0) {
         TclWinConvertError(GetLastError());
         DeleteObject(region);
 	Tcl_AppendResult(interp, "could not set region of outer shell of\"",
-			 Tk_PathName(tkwin), "\"", NULL);
+		Tk_PathName(tkwin), "\"", NULL);
 	return TCL_ERROR;
     }
 
@@ -539,11 +559,15 @@ Shape_MoveShape(interp, tkwin, kind, x, y)
 }
 
 int
-Shape_GetBbox(interp, tkwin, getClip, valid, x1, y1, x2, y2)
-     Tcl_Interp *interp;
-     Tk_Window tkwin;
-     int getClip; /* ignored */
-     int *valid, *x1, *y1, *x2, *y2;
+Shape_GetBbox(
+    Tcl_Interp *interp,
+    Tk_Window tkwin,
+    int getClip,	/* ignored */
+    int *valid,
+    int *x1,
+    int *y1,
+    int *x2,
+    int *y2)
 {
     HWND window;
     HRGN region;
@@ -557,7 +581,7 @@ Shape_GetBbox(interp, tkwin, getClip, valid, x1, y1, x2, y2)
         TclWinConvertError(GetLastError());
 	DeleteObject(region);
 	Tcl_AppendResult(interp, "could not read existing window "
-			 "region for ", Tk_PathName(srcwin), "\"", NULL);
+		"region for ", Tk_PathName(srcwin), "\"", NULL);
 	return TCL_ERROR;
     }
     if (GetRgnBox(region, &rect) == 0) {
@@ -574,10 +598,10 @@ Shape_GetBbox(interp, tkwin, getClip, valid, x1, y1, x2, y2)
 }
 
 int
-Shape_GetShapeRectanglesObj(interp, tkwin, getClip)
-     Tcl_Interp *interp;
-     Tk_Window tkwin;
-     int getClip;
+Shape_GetShapeRectanglesObj(
+    Tcl_Interp *interp,
+    Tk_Window tkwin,
+    int getClip)
 {
     HWND window;
     HRGN region;
@@ -596,7 +620,7 @@ Shape_GetShapeRectanglesObj(interp, tkwin, getClip)
         TclWinConvertError(GetLastError());
 	DeleteObject(region);
 	Tcl_AppendResult(interp, "could not read existing window "
-			 "region for ", Tk_PathName(srcwin), "\"", NULL);
+		"region for ", Tk_PathName(srcwin), "\"", NULL);
 	return TCL_ERROR;
     }
 
@@ -637,19 +661,19 @@ Shape_GetShapeRectanglesObj(interp, tkwin, getClip)
 }
 
 int
-Shape_ExtensionPresent(tkwin)
-     Tk_Window tkwin;
+Shape_ExtensionPresent(
+    Tk_Window tkwin)
 {
-    /* Test Windows version here? No, since we're already loaded, and
-     * the DLL won't make it that far without support for the
-     * functions we need... */
+    /* Test Windows version here? No, since we're already loaded, and the DLL
+     * won't make it that far without support for the functions we need... */
     return 1;
 }
 
 int
-Shape_QueryVersion(tkwin, majorPtr, minorPtr)
-     Tk_Window tkwin;
-     int *majorPtr, *minorPtr;
+Shape_QueryVersion(
+    Tk_Window tkwin,
+    int *majorPtr,
+    int *minorPtr)
 {
     *majorPtr = -1; /* Or maybe 0 instead? */
     *minorPtr = 0;
@@ -659,22 +683,26 @@ Shape_QueryVersion(tkwin, majorPtr, minorPtr)
 /* Placeholders for stuff not yet done... */
 
 int
-Shape_CombineBitmap(interp, tkwin, kind, op, x, y, bitmap)
-     Tcl_Interp *interp;
-     Tk_Window tkwin;
-     int kind, op, x, y;
-     Pixmap bitmap;
+Shape_CombineBitmap(
+    Tcl_Interp *interp,
+    Tk_Window tkwin,
+    int kind,
+    int op,
+    int x,
+    int y,
+    Pixmap bitmap)
 {
     Tcl_AppendResult(interp, "operation not supported yet", NULL);
     return TCL_ERROR;
 }
 
 XRectangle *
-ShapeRenderTextAsRectangles(tkwin, interp, string, font, numRects)
-     Tk_Window tkwin;
-     Tcl_Interp *interp;
-     Tcl_Obj *string, *font;
-     int *numRects;
+ShapeRenderTextAsRectangles(
+    Tk_Window tkwin,
+    Tcl_Interp *interp,
+    Tcl_Obj *string,
+    Tcl_Obj *font,
+    int *numRects)
 {
     Tcl_AppendResult(interp, "operation not supported yet", NULL);
     return NULL;

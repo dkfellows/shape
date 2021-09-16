@@ -24,7 +24,7 @@ extern int matherr();
 int *tclDummyMathPtr = (int *) matherr;
 
 #ifdef TK_TEST
-EXTERN int		Tktest_Init _ANSI_ARGS_((Tcl_Interp *interp));
+EXTERN int		Tktest_Init(Tcl_Interp *interp);
 #endif /* TK_TEST */
 
 /*
@@ -45,9 +45,9 @@ EXTERN int		Tktest_Init _ANSI_ARGS_((Tcl_Interp *interp));
  */
 
 int
-main(argc, argv)
-    int argc;			/* Number of command-line arguments. */
-    char **argv;		/* Values of command-line arguments. */
+main(
+    int argc,			/* Number of command-line arguments. */
+    char **argv)		/* Values of command-line arguments. */
 {
     Tk_Main(argc, argv, Tcl_AppInit);
     return 0;			/* Needed only to prevent compiler warning. */
@@ -71,11 +71,11 @@ main(argc, argv)
  *
  *----------------------------------------------------------------------
  */
-EXTERN int Shape_Init _ANSI_ARGS_((Tcl_Interp *interp));
+EXTERN int Shape_Init(Tcl_Interp *interp);
 
 int
-Tcl_AppInit(interp)
-    Tcl_Interp *interp;		/* Interpreter for application. */
+Tcl_AppInit(
+    Tcl_Interp *interp)		/* Interpreter for application. */
 {
     if (Tcl_Init(interp) == TCL_ERROR) {
 	return TCL_ERROR;
@@ -94,7 +94,6 @@ Tcl_AppInit(interp)
     if (Shape_Init(interp) == TCL_ERROR) {
 	return TCL_ERROR;
     }
-
 
     /*
      * Call the init procedures for included packages.  Each call should
