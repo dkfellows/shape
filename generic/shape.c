@@ -427,7 +427,7 @@ shapePhoto(
 static int
 shapeSetUpdateOps(
     Tk_Window tkwin0,
-    Tcl_Interp *interp;
+    Tcl_Interp *interp,
     int opnum,
     int objc,
     Tcl_Obj *const objv[])
