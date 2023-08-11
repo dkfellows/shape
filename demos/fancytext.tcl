@@ -1,8 +1,9 @@
 #!/bin/sh
 
-# dragger.tcl ---
+# fancytext.tcl ---
 #
-#	Quick demo using the shape library to provide a coloured cursor
+#	Make a piece of text look interesting by suggesting the shape of the
+#	letters
 #
 # Copyright (c) 1997 by Donal K. Fellows
 #
