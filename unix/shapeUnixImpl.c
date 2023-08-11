@@ -13,7 +13,7 @@
 #include <tk.h>				/* Includes conventional X stuff. */
 #include <X11/Xutil.h>			/* For Region declaration. */
 #include <X11/extensions/shape.h>
-#include "shape.h"
+#include "shapeInt.h"
 
 #ifdef DKF_SHAPE_DEBUGGING
 static int
@@ -364,11 +364,11 @@ int
 Shape_CombineWindow(
     Tcl_Interp *interp,
     Tk_Window tkwin,
-    Tk_Window srcwin,
     int kind,
     int op,
     int x,
-    int y)
+    int y,
+    Tk_Window srcwin)
 {
     Display *dpy  = Tk_Display(tkwin);
     Display *sdpy = Tk_Display(srcwin);
