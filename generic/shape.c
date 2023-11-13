@@ -11,17 +11,6 @@
 
 #include "shapeInt.h"
 
-#ifdef __WIN32__
-#define SUPPORTS_PHOTO_REGION
-#else
-#if (SHAPE_PHOTO == 1)
-#define SUPPORTS_PHOTO_REGION
-#endif
-#endif
-
-#ifdef SUPPORTS_PHOTO_REGION
-#include <tkInt.h>
-#endif
 #include <X11/Xutil.h>
 
 #define min(x,y)	((x)<(y) ? (x) : (y))
@@ -55,12 +44,9 @@ static int		shapeText(Tk_Window tkwin, Tcl_Interp *interp,
 static int		shapeWindow(Tk_Window tkwin, Tcl_Interp *interp,
 			    int x, int y, int op, int kind, int objc,
 			    Tcl_Obj *const objv[]);
-#ifdef SUPPORTS_PHOTO_REGION
 static int		shapePhoto(Tk_Window tkwin, Tcl_Interp *interp,
 			    int x, int y, int op, int kind, int objc,
 			    Tcl_Obj *const objv[]);
-#endif
-
 static int		shapeCmd(ClientData clientData, Tcl_Interp *interp,
 			    int objc, Tcl_Obj *const objv[]);
 
@@ -379,7 +365,6 @@ shapeWindow(
     return Shape_CombineWindow(interp, tkwin, kind, op, x, y, srcwin);
 }
 
-#ifdef SUPPORTS_PHOTO_REGION
 static int
 shapePhoto(
     Tk_Window tkwin,
@@ -469,7 +454,6 @@ shapePhoto(
     Tk_FreePixmap(dpy, maskDrawable);
     return result;
 }
-#endif
 
 static int
 shapeSetUpdateOps(
@@ -486,25 +470,19 @@ shapeSetUpdateOps(
 	"-offset",
 	"-bounding", "-clip", "-both",
 	"bitmap", "rectangles", "reset", "text", "window",
-#ifdef SUPPORTS_PHOTO_REGION
 	"photo",
-#endif
 	NULL
     };
     static enum optkind optk[] = {
 	offsetargs,
 	shapekind, shapekind, shapekind,
 	sourceargs, sourceargs, sourceargs, sourceargs, sourceargs
-#ifdef SUPPORTS_PHOTO_REGION
 	, sourceargs
-#endif
     };
     static shapeApplicator applicators[] = {
 	NULL, NULL, NULL, NULL,
 	shapeBitmap, shapeRects, shapeReset, shapeText, shapeWindow,
-#ifdef SUPPORTS_PHOTO_REGION
 	shapePhoto,
-#endif
 	NULL
     };
 

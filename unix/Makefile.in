@@ -50,7 +50,7 @@ GENERIC_DIR		= $(TOP_DIR)/generic
 UNIX_DIR		= $(TOP_DIR)/unix
 INCLUDE_DIR		= $(TOP_DIR)/include
 # ----------------------------------------------------------------------
-CFLAGS = -g -DSHAPE_PHOTO=@SHAPE_PHOTO@
+CFLAGS = -g
 CC_SWITCHES = $(CFLAGS) ${CFLAGS_WARNING} ${SHLIB_CFLAGS} \
 	-I${INCLUDE_DIR} -I${GENERIC_DIR} -I${UNIX_DIR} \
 	-I${TK_INCLUDE_DIR} ${TK_XINCLUDES} -I${TCL_INCLUDE_DIR} \
