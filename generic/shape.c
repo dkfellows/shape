@@ -393,7 +393,13 @@ shapePhoto(
 {
     char *imageName;
     Tk_PhotoHandle handle;
-    Region region;
+    XImage *maskXImage;
+    GC maskGC;
+    Pixmap maskDrawable;
+    Tk_PhotoImageBlock block;
+    int result, i, j;
+    Display *dpy = Tk_Display(tkwin);
+    Window window = Tk_WindowId(tkwin);
 
     if (objc != 1) {
 	Tcl_AppendResult(interp, "photo requires one argument; "
@@ -407,20 +413,61 @@ shapePhoto(
 	return TCL_ERROR;
     }
 
-    /*
-     * Deep implementation magic!  Relies on knowing a TkRegion is
-     * implemented as a Region under X...
-     */
-
-    region = (Region) TkPhotoGetValidRegion(handle);
-
-    if (region == None) {
-	Tcl_AppendResult(interp, "bad transparency info in photo image ",
-		imageName, NULL);
+    Tk_PhotoGetImage(handle, &block);
+    maskDrawable = Tk_GetPixmap(dpy, window, block.width, block.height, 1);
+    if (maskDrawable == None) {
+	Tcl_AppendResult(interp, "Tk_GetPixmap failed for image ",
+		imageName, (char *)NULL);
 	return TCL_ERROR;
     }
 
-    return Shape_CombineRegion(interp, tkwin, kind, op, x, y, region);
+    maskGC = XCreateGC(dpy, maskDrawable, 0ul, NULL);
+    if (maskGC == NULL) {
+	Tk_FreePixmap(dpy, maskDrawable);
+	Tcl_AppendResult(interp, "XCreateGC failed for image ",
+		imageName, (char *)NULL);
+	return TCL_ERROR;
+    }
+
+    maskXImage = XCreateImage(dpy, Tk_Visual(tkwin), 1u,
+	    XYBitmap, 0, NULL, 1, 1, 32, 0);
+    if (maskXImage == NULL) {
+	XFreeGC(dpy, maskGC);
+	Tk_FreePixmap(dpy, maskDrawable);
+	Tcl_AppendResult(interp, "XCreateImage failed for image ",
+		imageName, (char *)NULL);
+	return TCL_ERROR;
+    }
+
+    maskXImage->width = block.width;
+    maskXImage->height = block.height;
+    maskXImage->bytes_per_line = ((block.width + 31) >> 3) & ~3;
+    maskXImage->data = Tcl_Alloc(block.height * maskXImage->bytes_per_line);
+    if (maskXImage->data == NULL) {
+	XDestroyImage(maskXImage);
+	XFreeGC(dpy, maskGC);
+	Tk_FreePixmap(dpy, maskDrawable);
+	Tcl_AppendResult(interp, "failed to allocate mask XImage buffer for image ",
+		imageName, (char *)NULL);
+	return TCL_ERROR;
+    }
+
+    for (i = 0; i < block.height; i++) {
+	unsigned char *row = block.pixelPtr + i*block.pitch;
+	for (j = 0; j < block.width; j++) {
+	    unsigned char *pixel = row + j*block.pixelSize;
+	    XPutPixel(maskXImage, j, i, pixel[block.offset[3]] == 0);
+	}
+    }
+
+    XPutImage(dpy, maskDrawable, maskGC, maskXImage, 0, 0, 0, 0, block.width, block.height);
+    Tcl_Free(maskXImage->data);
+    maskXImage->data = NULL;
+    XDestroyImage(maskXImage);
+    XFreeGC(dpy, maskGC);
+    result = Shape_CombineBitmap(interp, tkwin, kind, op, x, y, maskDrawable);
+    Tk_FreePixmap(dpy, maskDrawable);
+    return result;
 }
 #endif
 
