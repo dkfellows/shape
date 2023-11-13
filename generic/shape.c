@@ -11,19 +11,7 @@
 
 #include "shapeInt.h"
 
-#ifdef __WIN32__
-#define SUPPORTS_PHOTO_REGION
-#else
-#if (SHAPE_PHOTO == 1)
-#define SUPPORTS_PHOTO_REGION
-#endif
-#endif
-
-#ifdef SUPPORTS_PHOTO_REGION
-#include <tkInt.h>
-#endif
 #include <X11/Xutil.h>
-#include "panic.h"
 
 #define min(x,y)	((x)<(y) ? (x) : (y))
 #define max(x,y)	((x)<(y) ? (y) : (x))
@@ -56,12 +44,9 @@ static int		shapeText(Tk_Window tkwin, Tcl_Interp *interp,
 static int		shapeWindow(Tk_Window tkwin, Tcl_Interp *interp,
 			    int x, int y, int op, int kind, int objc,
 			    Tcl_Obj *const objv[]);
-#ifdef SUPPORTS_PHOTO_REGION
 static int		shapePhoto(Tk_Window tkwin, Tcl_Interp *interp,
 			    int x, int y, int op, int kind, int objc,
 			    Tcl_Obj *const objv[]);
-#endif
-
 static int		shapeCmd(ClientData clientData, Tcl_Interp *interp,
 			    int objc, Tcl_Obj *const objv[]);
 
@@ -161,7 +146,7 @@ shapeBoundClipOps(
 	 */
 	return Shape_GetShapeRectanglesObj(interp, tkwin, idx);
     default: /* should be impossible to get here! */
-	panic("unexpected operation number %d", opnum);
+	Tcl_Panic("unexpected operation number %d", opnum);
     }
 }
 
@@ -380,7 +365,6 @@ shapeWindow(
     return Shape_CombineWindow(interp, tkwin, kind, op, x, y, srcwin);
 }
 
-#ifdef SUPPORTS_PHOTO_REGION
 static int
 shapePhoto(
     Tk_Window tkwin,
@@ -394,7 +378,13 @@ shapePhoto(
 {
     char *imageName;
     Tk_PhotoHandle handle;
-    Region region;
+    XImage *maskXImage;
+    GC maskGC;
+    Pixmap maskDrawable;
+    Tk_PhotoImageBlock block;
+    int result, i, j;
+    Display *dpy = Tk_Display(tkwin);
+    Window window = Tk_WindowId(tkwin);
 
     if (objc != 1) {
 	Tcl_AppendResult(interp, "photo requires one argument; "
@@ -402,33 +392,73 @@ shapePhoto(
 	return TCL_ERROR;
     }
 
-    imageName = Tcl_GetStringFromObj(objv[0], &NULL);
+    imageName = Tcl_GetStringFromObj(objv[0], NULL);
     handle = Tk_FindPhoto(interp, imageName);
     if (handle == NULL) {
 	return TCL_ERROR;
     }
 
-    /*
-     * Deep implementation magic!  Relies on knowing a TkRegion is
-     * implemented as a Region under X...
-     */
-
-    region = (Region) TkPhotoGetValidRegion(handle);
-
-    if (region == None) {
-	Tcl_AppendResult(interp, "bad transparency info in photo image ",
-		imageName, NULL);
+    Tk_PhotoGetImage(handle, &block);
+    maskDrawable = Tk_GetPixmap(dpy, window, block.width, block.height, 1);
+    if (maskDrawable == None) {
+	Tcl_AppendResult(interp, "Tk_GetPixmap failed for image ",
+		imageName, (char *)NULL);
 	return TCL_ERROR;
     }
 
-    return Shape_CombineRegion(interp, tkwin, kind, op, x, y, region);
+    maskGC = XCreateGC(dpy, maskDrawable, 0ul, NULL);
+    if (maskGC == NULL) {
+	Tk_FreePixmap(dpy, maskDrawable);
+	Tcl_AppendResult(interp, "XCreateGC failed for image ",
+		imageName, (char *)NULL);
+	return TCL_ERROR;
+    }
+
+    maskXImage = XCreateImage(dpy, Tk_Visual(tkwin), 1u,
+	    XYBitmap, 0, NULL, 1, 1, 32, 0);
+    if (maskXImage == NULL) {
+	XFreeGC(dpy, maskGC);
+	Tk_FreePixmap(dpy, maskDrawable);
+	Tcl_AppendResult(interp, "XCreateImage failed for image ",
+		imageName, (char *)NULL);
+	return TCL_ERROR;
+    }
+
+    maskXImage->width = block.width;
+    maskXImage->height = block.height;
+    maskXImage->bytes_per_line = ((block.width + 31) >> 3) & ~3;
+    maskXImage->data = Tcl_Alloc(block.height * maskXImage->bytes_per_line);
+    if (maskXImage->data == NULL) {
+	XDestroyImage(maskXImage);
+	XFreeGC(dpy, maskGC);
+	Tk_FreePixmap(dpy, maskDrawable);
+	Tcl_AppendResult(interp, "failed to allocate mask XImage buffer for image ",
+		imageName, (char *)NULL);
+	return TCL_ERROR;
+    }
+
+    for (i = 0; i < block.height; i++) {
+	unsigned char *row = block.pixelPtr + i*block.pitch;
+	for (j = 0; j < block.width; j++) {
+	    unsigned char *pixel = row + j*block.pixelSize;
+	    XPutPixel(maskXImage, j, i, pixel[block.offset[3]] == 0);
+	}
+    }
+
+    XPutImage(dpy, maskDrawable, maskGC, maskXImage, 0, 0, 0, 0, block.width, block.height);
+    Tcl_Free(maskXImage->data);
+    maskXImage->data = NULL;
+    XDestroyImage(maskXImage);
+    XFreeGC(dpy, maskGC);
+    result = Shape_CombineBitmap(interp, tkwin, kind, op, x, y, maskDrawable);
+    Tk_FreePixmap(dpy, maskDrawable);
+    return result;
 }
-#endif
 
 static int
 shapeSetUpdateOps(
     Tk_Window tkwin0,
-    Tcl_Interp *interp;
+    Tcl_Interp *interp,
     int opnum,
     int objc,
     Tcl_Obj *const objv[])
@@ -440,25 +470,19 @@ shapeSetUpdateOps(
 	"-offset",
 	"-bounding", "-clip", "-both",
 	"bitmap", "rectangles", "reset", "text", "window",
-#ifdef SUPPORTS_PHOTO_REGION
 	"photo",
-#endif
 	NULL
     };
     static enum optkind optk[] = {
 	offsetargs,
 	shapekind, shapekind, shapekind,
 	sourceargs, sourceargs, sourceargs, sourceargs, sourceargs
-#ifdef SUPPORTS_PHOTO_REGION
 	, sourceargs
-#endif
     };
     static shapeApplicator applicators[] = {
 	NULL, NULL, NULL, NULL,
 	shapeBitmap, shapeRects, shapeReset, shapeText, shapeWindow,
-#ifdef SUPPORTS_PHOTO_REGION
 	shapePhoto,
-#endif
 	NULL
     };
 
@@ -501,7 +525,7 @@ shapeSetUpdateOps(
 	break;
     }
     default: /* should be impossible to get here! */
-	panic("bad operation: %d", opnum);
+	Tcl_Panic("bad operation: %d", opnum);
     }
 
     tkwin = getWindow(tkwin0, interp, objv[2], &toplevel);
@@ -585,7 +609,7 @@ shapeCmd(
 	}
 
     default: /* should be impossible to get here! */
-	panic("switch fallthrough");
+	Tcl_Panic("switch fallthrough");
     }
 }
 

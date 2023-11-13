@@ -50,7 +50,7 @@ GENERIC_DIR		= $(TOP_DIR)/generic
 UNIX_DIR		= $(TOP_DIR)/unix
 INCLUDE_DIR		= $(TOP_DIR)/include
 # ----------------------------------------------------------------------
-CFLAGS = -g -DSHAPE_PHOTO=@SHAPE_PHOTO@
+CFLAGS = -g
 CC_SWITCHES = $(CFLAGS) ${CFLAGS_WARNING} ${SHLIB_CFLAGS} \
 	-I${INCLUDE_DIR} -I${GENERIC_DIR} -I${UNIX_DIR} \
 	-I${TK_INCLUDE_DIR} ${TK_XINCLUDES} -I${TCL_INCLUDE_DIR} \
@@ -59,7 +59,7 @@ CC_SWITCHES = $(CFLAGS) ${CFLAGS_WARNING} ${SHLIB_CFLAGS} \
 # ----------------------------------------------------------------------
 all: @PRIMARY_TARGET@
 
-$(OBJS): $(INCLUDE_DIR)/shape.h $(INCLUDE_DIR)/panic.h $(GENERIC_DIR)/shapeInt.h
+$(OBJS): $(INCLUDE_DIR)/shape.h $(GENERIC_DIR)/shapeInt.h
 
 shape.o: $(GENERIC_DIR)/shape.c
 	$(CC) -c $(CC_SWITCHES) $(GENERIC_DIR)/shape.c
