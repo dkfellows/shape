@@ -401,7 +401,7 @@ shapePhoto(
 	return TCL_ERROR;
     }
 
-    imageName = Tcl_GetStringFromObj(objv[0], &NULL);
+    imageName = Tcl_GetString(objv[0]);
     handle = Tk_FindPhoto(interp, imageName);
     if (handle == NULL) {
 	return TCL_ERROR;
