@@ -492,52 +492,6 @@ else
 fi
 
 
-echo $ac_n "checking for TkPhotoGetValidRegion""... $ac_c" 1>&6
-if eval "test \"`echo '$''{'ac_cv_func_TkPhotoGetValidRegion'+set}'`\" = set"; then
-  echo $ac_n "(cached) $ac_c" 1>&6
-else
-  cat > conftest.$ac_ext <<EOF
-#line 501 "configure"
-#include "confdefs.h"
-/* System header to define __stub macros and hopefully few prototypes,
-    which can conflict with char TkPhotoGetValidRegion(); below.  */
-#include <assert.h>
-/* Override any gcc2 internal prototype to avoid an error.  */
-char TkPhotoGetValidRegion(); 
-
-int main() { return 0; }
-int t() {
-
-/* The GNU C library defines this for functions which it implements
-    to always fail with ENOSYS.  Some functions are actually named
-    something starting with __ and the normal name is an alias.  */
-#if defined (__stub_TkPhotoGetValidRegion) || defined (__stub___TkPhotoGetValidRegion)
-choke me
-#else
-TkPhotoGetValidRegion();
-#endif
-
-; return 0; }
-EOF
-if eval $ac_link; then
-  rm -rf conftest*
-  eval "ac_cv_func_TkPhotoGetValidRegion=yes"
-else
-  rm -rf conftest*
-  eval "ac_cv_func_TkPhotoGetValidRegion=no"
-fi
-rm -f conftest*
-
-fi
-if eval "test \"`echo '$ac_cv_func_'TkPhotoGetValidRegion`\" = yes"; then
-  echo "$ac_t""yes" 1>&6
-  SHAPE_PHOTO=1
-else
-  echo "$ac_t""no" 1>&6
-SHAPE_PHOTO=0
-fi
-
-
 
 if test $TCL_SHARED_BUILD -eq 1; then
     PRIMARY_TARGET='$(SOFILE)'
@@ -679,7 +633,6 @@ s%@LIBS@%$LIBS%g
 s%@exec_prefix@%$exec_prefix%g
 s%@prefix@%$prefix%g
 s%@program_transform_name@%$program_transform_name%g
-s%@SHAPE_PHOTO@%$SHAPE_PHOTO%g
 s%@CC@%$CC%g
 s%@PRIMARY_TARGET@%$PRIMARY_TARGET%g
 s%@SHLIB_CFLAGS@%$SHLIB_CFLAGS%g

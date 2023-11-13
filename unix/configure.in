@@ -65,9 +65,6 @@ TCL_BIN_DIR=$TK_EXEC_PREFIX/bin
 
 AC_CHECK_LIB(Xext, XShapeQueryVersion, :, AC_MSG_ERROR(X extension library not available), $TK_XLIBSW)
 
-AC_CHECK_FUNC(TkPhotoGetValidRegion, SHAPE_PHOTO=1, SHAPE_PHOTO=0)
-AC_SUBST(SHAPE_PHOTO)
-
 if test $TCL_SHARED_BUILD -eq 1; then
     PRIMARY_TARGET='$(SOFILE)'
 else
