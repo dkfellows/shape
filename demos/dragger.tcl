@@ -46,7 +46,6 @@ image create photo redptr   -file [file join $images ptr-red.gif]
 image create photo greenptr -file [file join $images ptr-green.gif]
 image create photo doc      -file [file join $images doc-img.gif]
 set ptrxbm @[file join $images ptr-mask.xbm]
-set docxbm @[file join $images doc-mask.xbm]
 
 pack [label .l -justify l -text "Drag off this window to see a coloured\
 	cursor\n(implemented using a canvas and the non-rectangular\nwindow\
@@ -65,7 +64,7 @@ set image(doc) [.cursor.workarea create image 3 4 \
 #pack [label .cursor.ptr -bd 0 -image greenptr]
 update idletasks
 shape set .cursor.workarea -offset 0 0  bitmap $ptrxbm
-shape upd .cursor.workarea + -offset 3 4  bitmap $docxbm
+shape upd .cursor.workarea + -offset 3 4  photo doc
 shape set .cursor  window .cursor.workarea
 
 proc movecursor {x y} {
