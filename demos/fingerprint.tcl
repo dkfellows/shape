@@ -5,9 +5,11 @@
 # a little in order to increase its effectiveness.
 
 # Now we make cunning use of the backslash/shell trick \
-[ -x `dirname $0`/../shapewish ] && exec `dirname $0`/../shapewish $0 ${1+"$@"} || exec wish8.0 $0 ${1+"$@"} || { echo "`basename $0`: couldn't start wish" >&2 ; exit 1; }
+[ -x `dirname $0`/../shapewish ] && exec `dirname $0`/../shapewish $0 ${1+"$@"} || exec wish $0 ${1+"$@"} || { echo "`basename $0`: couldn't start wish" >&2 ; exit 1; }
 
-set dir [file join [pwd] [file dirname [info script]] ..]
+set dir [file join [pwd] [file dirname [info script]] .]
+package ifneeded Shape 0.4 "package require Tk 8\n\
+        [list tclPkgSetup "$dir/../unix/" Shape 0.4 {{libshape04.so.1.0 load shape}}]"
 lappend auto_path [file join $dir ..]
 package require Shape
 
