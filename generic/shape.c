@@ -23,7 +23,6 @@
 #include <tkInt.h>
 #endif
 #include <X11/Xutil.h>
-#include "panic.h"
 
 #define min(x,y)	((x)<(y) ? (x) : (y))
 #define max(x,y)	((x)<(y) ? (y) : (x))
@@ -161,7 +160,7 @@ shapeBoundClipOps(
 	 */
 	return Shape_GetShapeRectanglesObj(interp, tkwin, idx);
     default: /* should be impossible to get here! */
-	panic("unexpected operation number %d", opnum);
+	Tcl_Panic("unexpected operation number %d", opnum);
     }
 }
 
@@ -501,7 +500,7 @@ shapeSetUpdateOps(
 	break;
     }
     default: /* should be impossible to get here! */
-	panic("bad operation: %d", opnum);
+	Tcl_Panic("bad operation: %d", opnum);
     }
 
     tkwin = getWindow(tkwin0, interp, objv[2], &toplevel);
@@ -585,7 +584,7 @@ shapeCmd(
 	}
 
     default: /* should be impossible to get here! */
-	panic("switch fallthrough");
+	Tcl_Panic("switch fallthrough");
     }
 }
 

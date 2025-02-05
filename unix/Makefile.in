@@ -59,7 +59,7 @@ CC_SWITCHES = $(CFLAGS) ${CFLAGS_WARNING} ${SHLIB_CFLAGS} \
 # ----------------------------------------------------------------------
 all: @PRIMARY_TARGET@
 
-$(OBJS): $(INCLUDE_DIR)/shape.h $(INCLUDE_DIR)/panic.h $(GENERIC_DIR)/shapeInt.h
+$(OBJS): $(INCLUDE_DIR)/shape.h $(GENERIC_DIR)/shapeInt.h
 
 shape.o: $(GENERIC_DIR)/shape.c
 	$(CC) -c $(CC_SWITCHES) $(GENERIC_DIR)/shape.c
