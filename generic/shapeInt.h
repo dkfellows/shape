@@ -17,13 +17,12 @@
 
 #include <shape.h>
 
-#define ShapeApplyToBounding(kind) ((kind) & SHAPE_KIND_BOUNDING)
-#define ShapeApplyToClip(kind)     ((kind) & SHAPE_KIND_CLIP)
-#define ShapeApplyToParent(kind)   ((kind) & SHAPE_KIND_TOPLEVEL)
+#define ShapeApplyToBounding(kind)	((kind) & SHAPE_KIND_BOUNDING)
+#define ShapeApplyToClip(kind)		((kind) & SHAPE_KIND_CLIP)
+#define ShapeApplyToParent(kind)	((kind) & SHAPE_KIND_TOPLEVEL)
 
-EXTERN XRectangle *
-ShapeRenderTextAsRectangles(Tk_Window tkwin, Tcl_Interp *interp,
-				   Tcl_Obj *string, Tcl_Obj *font,
-				   int *numRects);
+EXTERN XRectangle *	ShapeRenderTextAsRectangles(Tk_Window tkwin,
+			    Tcl_Interp *interp, Tcl_Obj *string, Tcl_Obj *font,
+			    int *numRects);
 
 #endif

@@ -23,21 +23,25 @@
 #define SHAPE_VERSION		STRINGIFY(SHAPE_VERSION_MAJOR) "." STRINGIFY(SHAPE_VERSION_MINOR)
 #define SHAPE_PATCHLEVEL	SHAPE_VERSION "." STRINGIFY(SHAPE_VERSION_PATCH)
 
-#define SHAPE_KIND_BOUNDING	(1 << 0)
-#define SHAPE_KIND_CLIP		(1 << 1)
-#define SHAPE_KIND_BOTH		(SHAPE_KIND_BOUNDING | SHAPE_KIND_CLIP)
-#define SHAPE_KIND_TOPLEVEL	(1 << 8)
-#define SHAPE_KIND_ALL		(SHAPE_KIND_BOTH | SHAPE_KIND_TOPLEVEL)
-#define SHAPE_BOUND_MASK	(SHAPE_KIND_BOUNDING | SHAPE_KIND_TOPLEVEL)
-#define SHAPE_CLIP_MASK		(SHAPE_KIND_CLIP | SHAPE_KIND_TOPLEVEL)
+enum ShapeFlags {
+    SHAPE_KIND_BOUNDING = (1 << 0),
+    SHAPE_KIND_CLIP = (1 << 1),
+    SHAPE_KIND_BOTH = (SHAPE_KIND_BOUNDING | SHAPE_KIND_CLIP),
+    SHAPE_KIND_TOPLEVEL = (1 << 8),
+    SHAPE_KIND_ALL = (SHAPE_KIND_BOTH | SHAPE_KIND_TOPLEVEL),
+    SHAPE_BOUND_MASK = (SHAPE_KIND_BOUNDING | SHAPE_KIND_TOPLEVEL),
+    SHAPE_CLIP_MASK = (SHAPE_KIND_CLIP | SHAPE_KIND_TOPLEVEL)
+};
 
 #ifndef ShapeSet
 /* Taken from /usr/include/X11/extensions/shape.h */
-#define ShapeSet		0
-#define ShapeUnion		1
-#define ShapeIntersect		2
-#define ShapeSubtract		3
-#define ShapeInvert		4
+enum {
+    ShapeSet = 0,
+    ShapeUnion = 1,
+    ShapeIntersect = 2,
+    ShapeSubtract = 3,
+    ShapeInvert = 4
+};
 #endif /* ShapeSet */
 
 #define SHAPE_OP_SET		ShapeSet

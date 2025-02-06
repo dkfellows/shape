@@ -98,8 +98,10 @@ Shape_GetBbox(
     unsigned int wbs, hbs, wcs, hcs;
 
     if (win == None) {
-	Tcl_AppendResult(interp, "window ", Tk_PathName(tkwin),
-		" doesn't fully exist", NULL);
+	Tcl_SetObjResult(interp, Tcl_ObjPrintf(
+		"window %s doesn't fully exist",
+		Tk_PathName(tkwin)));
+	Tcl_SetErrorCode(interp, "SHAPE", "X11", "EXIST", NULL);
 	return TCL_ERROR;
     }
 
@@ -108,7 +110,9 @@ Shape_GetBbox(
 	    &cShaped, &xcs, &ycs, &wcs, &hcs);
 
     if (!s) {
-	Tcl_AppendResult(interp, "extents query failed", NULL);
+	Tcl_SetObjResult(interp, Tcl_ObjPrintf(
+		"extents query failed"));
+	Tcl_SetErrorCode(interp, "SHAPE", "X11", "EXTENTS", NULL);
 	return TCL_ERROR;
     } else if (bShaped && !getClip) {
 	/* Bounding box of window. */
@@ -162,8 +166,10 @@ Shape_GetShapeRectanglesObj(
     Tcl_Obj *rect[4], **retvals;
 
     if (win == None) {
-	Tcl_AppendResult(interp, "window ", Tk_PathName(tkwin),
-		" doesn't fully exist", NULL);
+	Tcl_SetObjResult(interp, Tcl_ObjPrintf(
+		"window %s doesn't fully exist",
+		Tk_PathName(tkwin)));
+	Tcl_SetErrorCode(interp, "SHAPE", "X11", "EXIST", NULL);
 	return TCL_ERROR;
     }
 

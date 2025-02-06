@@ -55,25 +55,15 @@ static int		shapeText(Tk_Window tkwin, Tcl_Interp *interp,
 static int		shapeWindow(Tk_Window tkwin, Tcl_Interp *interp,
 			    int x, int y, int op, int kind, int objc,
 			    Tcl_Obj *const objv[]);
-#ifdef SUPPORTS_PHOTO_REGION
 static int		shapePhoto(Tk_Window tkwin, Tcl_Interp *interp,
 			    int x, int y, int op, int kind, int objc,
 			    Tcl_Obj *const objv[]);
-#endif
 
 static int		shapeCmd(ClientData clientData, Tcl_Interp *interp,
 			    int objc, Tcl_Obj *const objv[]);
 
 enum {
     boundsCmd, getCmd, offsetCmd, setCmd, updateCmd, versionCmd
-};
-static char *subcommands[] = {
-    "bounds", "get", "offset", "set", "update", "version", NULL
-};
-static shapeCommandHandler shapeCommandHandlers[] = {
-    shapeBoundClipOps, shapeBoundClipOps,
-    shapeOffsetOp, shapeSetUpdateOps, shapeSetUpdateOps,
-    NULL
 };
 
 static Tk_Window
@@ -90,16 +80,20 @@ getWindow(
 	return NULL;
     }
     if (Tk_Display(tkwin) != Tk_Display(apptkwin)) {
-	Tcl_AppendResult(interp, "can only apply shape operations to windows"
-			 " on the same display as the main window of the"
-			 " application", NULL);
+	Tcl_SetObjResult(interp, Tcl_ObjPrintf(
+		"can only apply shape operations to windows"
+		" on the same display as the main window of the"
+		" application"));
+	Tcl_SetErrorCode(interp, "SHAPE", "DISPLAY", NULL);
 	return NULL;
     }
     if (Tk_WindowId(tkwin) == None) {
 	Tk_MakeWindowExist(tkwin);
 	if (Tk_WindowId(tkwin) == None) {
-	    Tcl_AppendResult(interp, "failed to create window ",
-			     Tk_PathName(tkwin), NULL);
+	    Tcl_SetObjResult(interp, Tcl_ObjPrintf(
+		    "failed to create window %s",
+		     Tk_PathName(tkwin)));
+	    Tcl_SetErrorCode(interp, "SHAPE", "CREATE", NULL);
 	    return NULL;
 	}
     }
@@ -216,8 +210,9 @@ shapeBitmap(
     int result;
 
     if (objc != 1) {
-	Tcl_AppendResult(interp, "bitmap requires one argument; a bitmap "
-		"name", NULL);
+	Tcl_SetObjResult(interp, Tcl_ObjPrintf(
+		"bitmap requires one argument; a bitmap name"));
+	Tcl_SetErrorCode(interp, "TCL", "WRONGARGS", NULL);
 	return TCL_ERROR;
     }
 
@@ -250,15 +245,18 @@ shapeRects(
     int count, i, result;
 
     if (objc != 1) {
-	Tcl_AppendResult(interp, "rectangles requires one argument; "
-		"a list of rectangles", NULL);
+	Tcl_SetObjResult(interp, Tcl_ObjPrintf(
+		"rectangles requires one argument; a list of rectangles"));
+	Tcl_SetErrorCode(interp, "TCL", "WRONGARGS", NULL);
 	return TCL_ERROR;
     }
 
     if (Tcl_ListObjGetElements(interp, objv[0], &count, &ovec) != TCL_OK) {
 	return TCL_ERROR;
-    } else if (count<1) {
-	Tcl_AppendResult(interp, "need at least one rectangle", NULL);
+    } else if (count < 1) {
+	Tcl_SetObjResult(interp, Tcl_ObjPrintf(
+		"need at least one rectangle"));
+	Tcl_SetErrorCode(interp, "SHAPE", "ARGS", NULL);
 	return TCL_ERROR;
     }
 
@@ -272,8 +270,10 @@ shapeRects(
 	    Tcl_Free((char *)rects);
 	    return TCL_ERROR;
 	} else if (rlen != 4) {
-	    Tcl_AppendResult(interp, "rectangles are described by four "
-		    "numbers; x1, y1, x2, and y2", NULL);
+	    Tcl_SetObjResult(interp, Tcl_ObjPrintf(
+		    "rectangles are described by four numbers; "
+		    "x1, y1, x2, and y2"));
+	    Tcl_SetErrorCode(interp, "SHAPE", "ARGS", NULL);
 	    Tcl_Free((char *) rects);
 	    return TCL_ERROR;
 	} else if (Tcl_GetIntFromObj(interp, rvec[0], &x1) != TCL_OK ||
@@ -307,7 +307,9 @@ shapeReset(
     Tcl_Obj *const objv[])
 {
     if (objc != 0) {
-	Tcl_AppendResult(interp, "reset takes no arguments", NULL);
+	Tcl_SetObjResult(interp, Tcl_ObjPrintf(
+		"reset takes no arguments"));
+	Tcl_SetErrorCode(interp, "TCL", "WRONGARGS", NULL);
 	return TCL_ERROR;
     }
 
@@ -329,8 +331,10 @@ shapeText(
     int count, result;
 
     if (objc != 2) {
-	Tcl_AppendResult(interp, "text requires two arguments; the string "
-		"to display and the font to use to display it", NULL);
+	Tcl_SetObjResult(interp, Tcl_ObjPrintf(
+		"text requires two arguments; the string "
+		"to display and the font to use to display it"));
+	Tcl_SetErrorCode(interp, "TCL", "WRONGARGS", NULL);
 	return TCL_ERROR;
     }
 
@@ -367,8 +371,9 @@ shapeWindow(
     Display *dpy;
 
     if (objc != 1) {
-	Tcl_AppendResult(interp, "window requires one argument; a window "
-		"pathName", NULL);
+	Tcl_SetObjResult(interp, Tcl_ObjPrintf(
+		"window requires one argument; a window pathName"));
+	Tcl_SetErrorCode(interp, "TCL", "WRONGARGS", NULL);
 	return TCL_ERROR;
     }
     srcwin = getWindow(tkwin, interp, objv[0], &ignore);
@@ -379,7 +384,6 @@ shapeWindow(
     return Shape_CombineWindow(interp, tkwin, kind, op, x, y, srcwin);
 }
 
-#ifdef SUPPORTS_PHOTO_REGION
 static int
 shapePhoto(
     Tk_Window tkwin,
@@ -393,36 +397,40 @@ shapePhoto(
 {
     char *imageName;
     Tk_PhotoHandle handle;
-    Region region;
+    Region region = None;
 
     if (objc != 1) {
-	Tcl_AppendResult(interp, "photo requires one argument; "
-		"a photo image name", NULL);
+	Tcl_SetObjResult(interp, Tcl_ObjPrintf(
+		"photo requires one argument; a photo image name"));
+	Tcl_SetErrorCode(interp, "TCL", "WRONGARGS", NULL);
 	return TCL_ERROR;
     }
 
-    imageName = Tcl_GetStringFromObj(objv[0], &NULL);
+    imageName = Tcl_GetString(objv[0]);
     handle = Tk_FindPhoto(interp, imageName);
     if (handle == NULL) {
 	return TCL_ERROR;
     }
 
+#ifdef SUPPORTS_PHOTO_REGION
     /*
      * Deep implementation magic!  Relies on knowing a TkRegion is
      * implemented as a Region under X...
      */
 
     region = (Region) TkPhotoGetValidRegion(handle);
+#endif
 
     if (region == None) {
-	Tcl_AppendResult(interp, "bad transparency info in photo image ",
-		imageName, NULL);
+	Tcl_SetObjResult(interp, Tcl_ObjPrintf(
+		"bad transparency info in photo image %s",
+		imageName));
+	Tcl_SetErrorCode(interp, "SHAPE", "BAD", NULL);
 	return TCL_ERROR;
     }
 
     return Shape_CombineRegion(interp, tkwin, kind, op, x, y, region);
 }
-#endif
 
 static int
 shapeSetUpdateOps(
@@ -435,30 +443,42 @@ shapeSetUpdateOps(
     enum optkind {
 	shapekind, offsetargs, sourceargs
     };
-    static char *options[] = {
-	"-offset",
-	"-bounding", "-clip", "-both",
-	"bitmap", "rectangles", "reset", "text", "window",
-#ifdef SUPPORTS_PHOTO_REGION
-	"photo",
-#endif
-	NULL
+    typedef struct opDefn {
+	const char *name;
+	enum optkind kind;
+	shapeApplicator app;
+    } opDefn;
+    typedef struct updDefn {
+	const char *name;
+	int opcode;
+    } updDefn;
+    static const opDefn options[] = {
+	{"-offset",	offsetargs, NULL},
+	{"-bounding",	shapekind,  NULL},
+	{"-clip",	shapekind,  NULL},
+	{"-both",	shapekind,  NULL},
+	{"bitmap",	sourceargs, shapeBitmap},
+	{"photo",	sourceargs, shapePhoto},
+	{"rectangles",	sourceargs, shapeRects},
+	{"reset",	sourceargs, shapeReset},
+	{"text",	sourceargs, shapeText},
+	{"window",	sourceargs, shapeWindow},
+	{NULL,		offsetargs, NULL}
     };
-    static enum optkind optk[] = {
-	offsetargs,
-	shapekind, shapekind, shapekind,
-	sourceargs, sourceargs, sourceargs, sourceargs, sourceargs
-#ifdef SUPPORTS_PHOTO_REGION
-	, sourceargs
-#endif
-    };
-    static shapeApplicator applicators[] = {
-	NULL, NULL, NULL, NULL,
-	shapeBitmap, shapeRects, shapeReset, shapeText, shapeWindow,
-#ifdef SUPPORTS_PHOTO_REGION
-	shapePhoto,
-#endif
-	NULL
+    static const updDefn operations[] = {
+	{"set",		SHAPE_OP_SET},
+	{"union",	SHAPE_OP_UNION},
+	{"intersect",	SHAPE_OP_INTERSECT},
+	{"subtract",	SHAPE_OP_SUBTRACT},
+	{"invert",	SHAPE_OP_INVERT},
+	{":=",	SHAPE_OP_SET},
+	{"+=",	SHAPE_OP_UNION},
+	{"*=",	SHAPE_OP_INTERSECT},
+	{"-=",	SHAPE_OP_SUBTRACT},
+	{"=",	SHAPE_OP_SET},
+	{"||",	SHAPE_OP_UNION},
+	{"&&",	SHAPE_OP_INTERSECT},
+	{NULL}
     };
 
     int operation = ShapeSet;
@@ -473,32 +493,20 @@ shapeSetUpdateOps(
 	}
 	idx = 3;
 	break;
-    case updateCmd: {
-	static char *operations[] = {
-	    "set", "union", "intersect", "subtract", "invert",
-	    ":=", "+=", "*=", "-=", "=", "||", "&&", NULL
-	};
-	static int opmap[] = {
-	    SHAPE_OP_SET,       SHAPE_OP_UNION,     SHAPE_OP_INTERSECT,
-	    SHAPE_OP_SUBTRACT,  SHAPE_OP_INVERT,    SHAPE_OP_SET,
-	    SHAPE_OP_UNION,     SHAPE_OP_INTERSECT, SHAPE_OP_SUBTRACT,
-	    SHAPE_OP_SET,       SHAPE_OP_UNION,     SHAPE_OP_INTERSECT
-	};
-
+    case updateCmd:
 	if (objc < 4) {
 	    Tcl_WrongNumArgs(interp, 1, objv,
 		    "update pathName operation ?options?");
 	    return TCL_ERROR;
 	}
 
-	if (Tcl_GetIndexFromObj(interp, objv[3], operations, "operation", 0,
-		&opidx) != TCL_OK) {
+	if (Tcl_GetIndexFromObjStruct(interp, objv[3], operations,
+		sizeof(operations[0]), "operation", 0, &opidx) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	operation = opmap[opidx];
+	operation = operations[opidx].opcode;
 	idx = 4;
 	break;
-    }
     default: /* should be impossible to get here! */
 	Tcl_Panic("bad operation: %d", opnum);
     }
@@ -510,18 +518,19 @@ shapeSetUpdateOps(
     kind = encodeKind(SHAPE_KIND_BOTH, toplevel);
 
     for (; idx<objc ; idx++) {
-	if (Tcl_GetIndexFromObj(interp, objv[idx], options, "option", 0,
-		&opidx) != TCL_OK) {
+	if (Tcl_GetIndexFromObjStruct(interp, objv[idx], options,
+		sizeof(options[0]), "option", 0, &opidx) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	switch (optk[opidx]) {
+	switch (options[opidx].kind) {
 	case shapekind:
 	    kind = encodeKind(opidx, toplevel);
 	    break;
 	case offsetargs:
 	    if (idx + 2 >= objc) {
-		Tcl_AppendResult(interp, "-offset reqires two args; x and y",
-			NULL);
+		Tcl_SetObjResult(interp, Tcl_ObjPrintf(
+			"-offset reqires two args; x and y"));
+		Tcl_SetErrorCode(interp, "SHAPE", "ARGS", NULL);
 		return TCL_ERROR;
 	    } else if (Tcl_GetIntFromObj(interp, objv[idx+1], &x) != TCL_OK ||
 		    Tcl_GetIntFromObj(interp, objv[idx+2], &y) != TCL_OK) {
@@ -530,18 +539,19 @@ shapeSetUpdateOps(
 	    idx += 2;
 	    break;
 	case sourceargs: {
-	    shapeApplicator app = applicators[opidx];
-	    if (app != NULL) {
-		objc -= idx + 1;
-		objv += idx + 1;
-		return app(tkwin, interp, x, y, operation, kind, objc, objv);
+	    shapeApplicator app = options[opidx].app;
+	    if (!app != NULL) {
+		Tcl_Panic("bad source operation definition");
 	    }
-	    Tcl_AppendResult(interp, "not supported", NULL);
-	    return TCL_ERROR;
+	    objc -= idx + 1;
+	    objv += idx + 1;
+	    return app(tkwin, interp, x, y, operation, kind, objc, objv);
 	}
 	}
     }
-    Tcl_AppendResult(interp, "no source to take shape from", NULL);
+    Tcl_SetObjResult(interp, Tcl_ObjPrintf(
+	    "no source to take shape from"));
+    Tcl_SetErrorCode(interp, "SHAPE", "NO_SRC", NULL);
     return TCL_ERROR;
 }
 
@@ -552,19 +562,32 @@ shapeCmd(
     int objc,
     Tcl_Obj *const objv[])
 {
+    typedef struct cmdDefn {
+	const char *name;
+	shapeCommandHandler handler;
+    } cmdDefn;
+    static const cmdDefn subcommands[] = {
+	{"bounds",	shapeBoundClipOps},
+	{"get",		shapeBoundClipOps},
+	{"offset",	shapeOffsetOp},
+	{"set",		shapeSetUpdateOps},
+	{"update",	shapeSetUpdateOps},
+	{"version",	NULL},	/* direct handling */
+	{NULL}
+    };
     int subcmdidx;
 
     if (objc < 2) {
 	Tcl_WrongNumArgs(interp, 1, objv, "subcommand ?window arg ...?");
 	return TCL_ERROR;
-    } else if (Tcl_GetIndexFromObj(interp, objv[1], subcommands, "subcommand",
-	    0, &subcmdidx) != TCL_OK) {
+    } else if (Tcl_GetIndexFromObjStruct(interp, objv[1], subcommands,
+	    sizeof(subcommands[0]), "subcommand", 0, &subcmdidx) != TCL_OK) {
 	return TCL_ERROR;
     }
 
-    if (shapeCommandHandlers[subcmdidx]) {
+    if (subcommands[subcmdidx].handler) {
 	/* Farm out the more complex operations */
-	return shapeCommandHandlers[subcmdidx](clientData, interp, subcmdidx,
+	return subcommands[subcmdidx].handler(clientData, interp, subcmdidx,
 		objc, objv);
     } else switch (subcmdidx) {  
     case versionCmd:
@@ -598,8 +621,9 @@ Shape_Init(
 	return TCL_ERROR;
     }
     if (!Shape_ExtensionPresent(tkwin)) {
-	Tcl_AppendResult(interp, "shaped window extension not supported on "
-		"this X server", NULL);
+	Tcl_SetObjResult(interp, Tcl_ObjPrintf(
+		"shaped window extension not supported on this X server"));
+	Tcl_SetErrorCode(interp, "SHAPE", "UNSUPPORTED", NULL);
 	return TCL_ERROR;
     }
 

@@ -33,8 +33,8 @@ static int mixHRGN(Tcl_Interp*, char*, HWND, HWND, int, int, int, HRGN);
 static int
 getHWNDs(
     Tcl_Interp *interp,
-    Tk_Window tkwin;
-    int kind;
+    Tk_Window tkwin,
+    int kind,
     HWND *window,
     HWND *parent)
 {
@@ -470,12 +470,12 @@ Shape_CombineWindow(
 int
 Shape_Reset(
     Tcl_Interp *interp,
-    Tk_Window window,
+    Tk_Window tkwin,
     int kind)
 {
     HWND window, parent;
 
-    if (getHWNDs(interp, tkwin, kind, &src, NULL) != TCL_OK) {
+    if (getHWNDs(interp, tkwin, kind, &window, NULL) != TCL_OK) {
 	return TCL_ERROR;
     }
     if (SetWindowRgn(window, NULL, TRUE) == 0) {
@@ -496,12 +496,13 @@ Shape_Reset(
 int
 Shape_MoveShape(
     Tcl_Interp *interp,
-    Tk_Window window,
+    Tk_Window tkwin,
     int kind,
     int x,
     int y)
 {
     HWND window, parent;
+    HRGN region;
 
     if (getHWNDs(interp, tkwin, kind, &window, &parent) != TCL_OK) {
 	return TCL_ERROR;
@@ -538,7 +539,7 @@ Shape_MoveShape(
         TclWinConvertError(GetLastError());
         DeleteObject(region);
 	Tcl_AppendResult(interp, "could not read existing window region "
-		"for outer shell of ", Tk_PathName(srcwin), "\"", NULL);
+		"for outer shell of ", Tk_PathName(tkwin), "\"", NULL);
 	return TCL_ERROR;
     }
     if (OffsetRegion(region, x, y) == ERROR) {
@@ -562,7 +563,7 @@ int
 Shape_GetBbox(
     Tcl_Interp *interp,
     Tk_Window tkwin,
-    int getClip,	/* ignored */
+    int kind,	/* ignored */
     int *valid,
     int *x1,
     int *y1,
@@ -581,7 +582,7 @@ Shape_GetBbox(
         TclWinConvertError(GetLastError());
 	DeleteObject(region);
 	Tcl_AppendResult(interp, "could not read existing window "
-		"region for ", Tk_PathName(srcwin), "\"", NULL);
+		"region for ", Tk_PathName(tkwin), "\"", NULL);
 	return TCL_ERROR;
     }
     if (GetRgnBox(region, &rect) == 0) {
@@ -601,7 +602,7 @@ int
 Shape_GetShapeRectanglesObj(
     Tcl_Interp *interp,
     Tk_Window tkwin,
-    int getClip)
+    int kind)
 {
     HWND window;
     HRGN region;
@@ -620,7 +621,7 @@ Shape_GetShapeRectanglesObj(
         TclWinConvertError(GetLastError());
 	DeleteObject(region);
 	Tcl_AppendResult(interp, "could not read existing window "
-		"region for ", Tk_PathName(srcwin), "\"", NULL);
+		"region for ", Tk_PathName(tkwin), "\"", NULL);
 	return TCL_ERROR;
     }
 
