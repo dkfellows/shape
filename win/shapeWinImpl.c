@@ -29,16 +29,16 @@ static int getHWNDs(Tcl_Interp*, Tk_Window, int, HWND*, HWND*);
 static int setHRGN(Tcl_Interp*, char*, HWND, HWND, int, int, HRGN);
 static int invertHRGN(Tcl_Interp*, char*, HWND, HWND, int, int, int, int);
 static int mixHRGN(Tcl_Interp*, char*, HWND, HWND, int, int, int, HRGN);
-
+
 static inline int
-offsetRegion(
+translateRegion(
     Tcl_Interp *interp,
     HRGN region,
     int x,
     int y)
 {
     if (OffsetRgn(region, x, y) == ERROR) {
-        TclWinConvertError(GetLastError());
+        Tcl_WinConvertError(GetLastError());
 	Tcl_SetObjResult(interp, Tcl_ObjPrintf(
 		"could not apply offset to region"));
 	return TCL_ERROR;
@@ -54,7 +54,7 @@ setBaseRegion(
     HRGN region)
 {
     if (SetWindowRgn(window, region, TRUE) == 0) {
-        TclWinConvertError(GetLastError());
+        Tcl_WinConvertError(GetLastError());
 	Tcl_SetObjResult(interp, Tcl_ObjPrintf(
 		"could not set region of \"%s\"",
 		pathName));
@@ -71,7 +71,7 @@ setShellRegion(
     HRGN region)
 {
     if (parent != NULL && SetWindowRgn(parent, region, TRUE) == 0) {
-        TclWinConvertError(GetLastError());
+        Tcl_WinConvertError(GetLastError());
 	Tcl_SetObjResult(interp, Tcl_ObjPrintf(
 		"set region failed for outer shell of \"%s\"",
 		pathName));
@@ -88,7 +88,7 @@ getBaseRegion(
     HRGN region)
 {
     if (GetWindowRgn(window, region) == ERROR) {
-        TclWinConvertError(GetLastError());
+        Tcl_WinConvertError(GetLastError());
 	Tcl_SetObjResult(interp, Tcl_ObjPrintf(
 		"could not read existing window region for \"%s\"",
 		pathName));
@@ -105,7 +105,7 @@ getShellRegion(
     HRGN region)
 {
     if (parent != NULL && GetWindowRgn(parent, region) == ERROR) {
-        TclWinConvertError(GetLastError());
+        Tcl_WinConvertError(GetLastError());
 	Tcl_SetObjResult(interp, Tcl_ObjPrintf(
 		"could not read existing region of outer shell for \"%s\"",
 		pathName));
@@ -114,6 +114,24 @@ getShellRegion(
     return TCL_OK;
 }
 
+static inline int
+combineRegions(
+    Tcl_Interp *interp,
+    HRGN regionDst,
+    HRGN regionSrc1,
+    HRGN regionSrc2,
+    int op,
+    const char *opDesc)
+{
+    if (CombineRgn(regionDst, regionSrc1, regionSrc2, op) == ERROR) {
+        Tcl_WinConvertError(GetLastError());
+	Tcl_SetObjResult(interp, Tcl_ObjPrintf(
+		"could not %s region", opDesc));
+	return TCL_ERROR;
+    }
+    return TCL_OK;
+}
+
 static int
 getHWNDs(
     Tcl_Interp *interp,
@@ -145,7 +163,7 @@ getHWNDs(
 		strcmp(myname, "TkTopLevel") != 0) {
 	    hwnd = GetParent(hwnd);
 	    if (hwnd == NULL) {
-	        TclWinConvertError(GetLastError());
+	        Tcl_WinConvertError(GetLastError());
 		Tcl_SetObjResult(interp, Tcl_ObjPrintf(
 			"parental window search for window \"%s\" failed",
 			Tk_PathName(tkwin)));
@@ -154,7 +172,7 @@ getHWNDs(
 	}
 
 	if (returnval == 0) {
-	    TclWinConvertError(GetLastError());
+	    Tcl_WinConvertError(GetLastError());
 	    Tcl_SetObjResult(interp, Tcl_ObjPrintf(
 		    "parental classname determinisation for window \"%s\" failed",
 		    Tk_PathName(tkwin)));
@@ -185,7 +203,7 @@ setHRGN(
 {
     HRGN tmp;
 
-    if ((x != 0 || y != 0) && offsetRegion(interp, region, x, y) != TCL_OK) {
+    if ((x != 0 || y != 0) && translateRegion(interp, region, x, y) != TCL_OK) {
 	DeleteObject(region);
 	return TCL_ERROR;
     }
@@ -197,11 +215,8 @@ setHRGN(
         return TCL_OK;
     }
     tmp = (HRGN) TkCreateRegion();
-    if (CombineRgn(tmp, region, tmp, RGN_COPY) == ERROR) {
-        TclWinConvertError(GetLastError());
+    if (combineRegions(interp, tmp, region, tmp, RGN_COPY, "duplicate") != TCL_OK) {
         DeleteObject(tmp);
-	Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-		"could not duplicate region"));
 	return TCL_ERROR;
     }
     if (setShellRegion(interp, pathname, parent, tmp) != TCL_OK) {
@@ -229,16 +244,13 @@ invertHRGN(
 	return TCL_ERROR;
     }
     tmp = CreateRectRgn(0, 0, w-1, h-1); /* assume *this* works... */
-    if (CombineRgn(tmp, region, tmp, RGN_XOR) == ERROR) {
-        TclWinConvertError(GetLastError());
+    if (combineRegions(interp, tmp, region, tmp, RGN_XOR, "invert") != TCL_OK) {
         DeleteObject(tmp);
         DeleteObject(region);
-	Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-		"could not invert region"));
 	return TCL_ERROR;
     }
     DeleteObject(region);
-    if ((x != 0 || y != 0) && offsetRegion(interp, tmp, x, y) != TCL_OK) {
+    if ((x != 0 || y != 0) && translateRegion(interp, tmp, x, y) != TCL_OK) {
 	DeleteObject(tmp);
 	return TCL_ERROR;
     }
@@ -256,16 +268,13 @@ invertHRGN(
 	return TCL_ERROR;
     }        
     tmp = CreateRectRgn(0, 0, w-1, h-1); /* assume *this* works... */
-    if (CombineRgn(tmp, region, tmp, RGN_XOR) == ERROR) {
-        TclWinConvertError(GetLastError());
+    if (combineRegions(interp, tmp, region, tmp, RGN_XOR, "invert") != TCL_OK) {
         DeleteObject(tmp);
         DeleteObject(region);
-	Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-		"could not invert region"));
 	return TCL_ERROR;
     }
     DeleteObject(region);
-    if ((x != 0 || y != 0) && offsetRegion(interp, tmp, x, y) != TCL_OK) {
+    if ((x != 0 || y != 0) && translateRegion(interp, tmp, x, y) != TCL_OK) {
 	DeleteObject(tmp);
 	return TCL_ERROR;
     }
@@ -287,7 +296,7 @@ mixHRGN(
     HRGN region)
 {
     HRGN tmp;
-    if ((x != 0 || y != 0) && offsetRegion(interp, region, x, y) != TCL_OK) {
+    if ((x != 0 || y != 0) && translateRegion(interp, region, x, y) != TCL_OK) {
 	DeleteObject(region);
 	return TCL_ERROR;
     }
@@ -298,12 +307,9 @@ mixHRGN(
 	DeleteObject(region);
         return TCL_ERROR;
     }
-    if (CombineRgn(tmp, region, tmp, op) == ERROR) {
-        TclWinConvertError(GetLastError());
+    if (combineRegions(interp, tmp, region, tmp, op, "apply operation to") != TCL_OK) {
         DeleteObject(tmp);
         DeleteObject(region);
-	Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-		"could not apply operation to region"));
 	return TCL_ERROR;
     }
     if (setBaseRegion(interp, pathname, window, tmp) != TCL_OK) {
@@ -323,12 +329,9 @@ mixHRGN(
 	DeleteObject(region);
         return TCL_ERROR;
     }
-    if (CombineRgn(tmp, region, tmp, op) == ERROR) {
-        TclWinConvertError(GetLastError());
+    if (combineRegions(interp, tmp, region, tmp, op, "apply operation to") != TCL_OK) {
         DeleteObject(tmp);
         DeleteObject(region);
-	Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-		"could not apply operation to region"));
 	return TCL_ERROR;
     }
     DeleteObject(region);
@@ -398,12 +401,9 @@ ShapeAddDataToRegion(
     data->rdh.nCount = size;
     tmp = ExtCreateRegion(NULL, sizeof(RGNDATAHEADER)+size*sizeof(RECT), data);
     if (region == NULL) return tmp;
-    if (CombineRgn(tmp, tmp, region, RGN_OR) == ERROR) {
-        TclWinConvertError(GetLastError());
+    if (combineRegions(interp, tmp, tmp, region, RGN_OR, "merge") != TCL_OK) {
 	DeleteObject(tmp);
 	DeleteObject(region);
-	Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-		"combination operation failed"));
 	return NULL;
     }
     DeleteObject(region);
@@ -486,11 +486,8 @@ Shape_CombineRegion(
     Region region)
 {
     HRGN tmp = (HRGN) TkCreateRegion();
-    if (CombineRgn(tmp, region, tmp, RGN_COPY) == ERROR) {
-        TclWinConvertError(GetLastError());
+    if (combineRegions(interp, tmp, region, tmp, RGN_COPY, "duplicate") != TCL_OK) {
 	DeleteObject(tmp);
-	Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-		"could not duplicate region"));
 	return TCL_ERROR;
     }
     return ShapeCombineHRGN(interp, tkwin, kind, op, x, y, tmp);
@@ -563,11 +560,8 @@ Shape_MoveShape(
 	DeleteObject(region);
 	return TCL_ERROR;
     }
-    if (OffsetRegion(region, x, y) == ERROR) {
-        TclWinConvertError(GetLastError());
+    if (translateRegion(interp, region, x, y) != TCL_OK) {
 	DeleteObject(region);
-	Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-		"could not apply offset to region"));
 	return TCL_ERROR;
     }
     if (setBaseRegion(interp, Tk_PathName(tkwin), window, region) != TCL_OK) {
@@ -584,11 +578,8 @@ Shape_MoveShape(
         DeleteObject(region);
 	return TCL_ERROR;
     }
-    if (OffsetRegion(region, x, y) == ERROR) {
-        TclWinConvertError(GetLastError());
+    if (translateRegion(interp, region, x, y) != TCL_OK) {
         DeleteObject(region);
-	Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-		"could not apply offset to region"));
 	return TCL_ERROR;
     }
     if (setShellRegion(interp, Tk_PathName(tkwin), parent, region) != TCL_OK) {
@@ -662,26 +653,26 @@ Shape_GetShapeRectanglesObj(
     /*** GET THE RECTANGLES FOR THE REGION ***/
     size = GetRegionData(region, 0, NULL);
     if (size == 0) {
-        TclWinConvertError(GetLastError());
-	DeleteObject(region);
+        Tcl_WinConvertError(GetLastError());
 	Tcl_SetObjResult(interp, Tcl_ObjPrintf(
 		"could not calculate buffer size"));
+	DeleteObject(region);
 	return TCL_ERROR;
     }
     buffer = (LPRGNDATA)Tcl_Alloc(size);
     if (GetRegionData(region, size, buffer) == 0) {
-        TclWinConvertError(GetLastError());
-	DeleteObject(region);
-	Tcl_Free((char *)buffer);
+        Tcl_WinConvertError(GetLastError());
 	Tcl_SetObjResult(interp, Tcl_ObjPrintf(
 		"could not populate buffer"));
+	DeleteObject(region);
+	Tcl_Free((char *)buffer);
 	return TCL_ERROR;
     }
     rects = (RECT*)&(buffer->Buffer);
     CloseRegion(region);
 
     /*** GET THE TCL_OBJ FOR THE RECTANGLES ***/
-    result = Tcl_NewObj();
+    result = Tcl_NewListObj(buffer->rdh.nCount, NULL);
     for (i=0 ; i<buffer->rdh.nCount ; i++) {
 	/* reusing these objects between rectangles is impractical */
 	vec[0] = Tcl_NewIntObj(rects[i].left);
@@ -689,7 +680,7 @@ Shape_GetShapeRectanglesObj(
 	vec[2] = Tcl_NewIntObj(rects[i].right);
 	vec[3] = Tcl_NewIntObj(rects[i].bottom);
 	/* assume this op will not fail, since object is under our control */
-	Tcl_ListObjAppendElement(interp, result, Tcl_NewListObj(4, vec));
+	Tcl_ListObjAppendElement(NULL, result, Tcl_NewListObj(4, vec));
     }
     Tcl_Free((char *)buffer);
     Tcl_SetObjResult(interp, result);
