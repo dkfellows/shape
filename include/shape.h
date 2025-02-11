@@ -44,11 +44,13 @@ enum {
 };
 #endif /* ShapeSet */
 
-#define SHAPE_OP_SET		ShapeSet
-#define SHAPE_OP_UNION		ShapeUnion
-#define SHAPE_OP_INTERSECT	ShapeIntersect
-#define SHAPE_OP_SUBTRACT	ShapeSubtract
-#define SHAPE_OP_INVERT		ShapeInvert
+typedef enum ShapeOps {
+    SHAPE_OP_SET = ShapeSet,
+    SHAPE_OP_UNION = ShapeUnion,
+    SHAPE_OP_INTERSECT = ShapeIntersect,
+    SHAPE_OP_SUBTRACT = ShapeSubtract,
+    SHAPE_OP_INVERT = ShapeInvert
+} ShapeOps;
 
 EXTERN int		Shape_GetBbox(Tcl_Interp *interp, Tk_Window tkwin,
 			    int getClip, int *valid, int *x1, int *y1, int *x2,
