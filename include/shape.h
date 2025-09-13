@@ -23,28 +23,34 @@
 #define SHAPE_VERSION		STRINGIFY(SHAPE_VERSION_MAJOR) "." STRINGIFY(SHAPE_VERSION_MINOR)
 #define SHAPE_PATCHLEVEL	SHAPE_VERSION "." STRINGIFY(SHAPE_VERSION_PATCH)
 
-#define SHAPE_KIND_BOUNDING	(1 << 0)
-#define SHAPE_KIND_CLIP		(1 << 1)
-#define SHAPE_KIND_BOTH		(SHAPE_KIND_BOUNDING | SHAPE_KIND_CLIP)
-#define SHAPE_KIND_TOPLEVEL	(1 << 8)
-#define SHAPE_KIND_ALL		(SHAPE_KIND_BOTH | SHAPE_KIND_TOPLEVEL)
-#define SHAPE_BOUND_MASK	(SHAPE_KIND_BOUNDING | SHAPE_KIND_TOPLEVEL)
-#define SHAPE_CLIP_MASK		(SHAPE_KIND_CLIP | SHAPE_KIND_TOPLEVEL)
+typedef enum ShapeKind {
+    SHAPE_KIND_BOUNDING = (1 << 0),
+    SHAPE_KIND_CLIP = (1 << 1),
+    SHAPE_KIND_BOTH = (SHAPE_KIND_BOUNDING | SHAPE_KIND_CLIP),
+    SHAPE_KIND_TOPLEVEL = (1 << 8),
+    SHAPE_KIND_ALL = (SHAPE_KIND_BOTH | SHAPE_KIND_TOPLEVEL),
+    SHAPE_BOUND_MASK = (SHAPE_KIND_BOUNDING | SHAPE_KIND_TOPLEVEL),
+    SHAPE_CLIP_MASK = (SHAPE_KIND_CLIP | SHAPE_KIND_TOPLEVEL)
+} ShapeKind;
 
 #ifndef ShapeSet
 /* Taken from /usr/include/X11/extensions/shape.h */
-#define ShapeSet		0
-#define ShapeUnion		1
-#define ShapeIntersect		2
-#define ShapeSubtract		3
-#define ShapeInvert		4
+enum {
+    ShapeSet = 0,
+    ShapeUnion = 1,
+    ShapeIntersect = 2,
+    ShapeSubtract = 3,
+    ShapeInvert = 4
+};
 #endif /* ShapeSet */
 
-#define SHAPE_OP_SET		ShapeSet
-#define SHAPE_OP_UNION		ShapeUnion
-#define SHAPE_OP_INTERSECT	ShapeIntersect
-#define SHAPE_OP_SUBTRACT	ShapeSubtract
-#define SHAPE_OP_INVERT		ShapeInvert
+typedef enum ShapeOps {
+    SHAPE_OP_SET = ShapeSet,
+    SHAPE_OP_UNION = ShapeUnion,
+    SHAPE_OP_INTERSECT = ShapeIntersect,
+    SHAPE_OP_SUBTRACT = ShapeSubtract,
+    SHAPE_OP_INVERT = ShapeInvert
+} ShapeOps;
 
 EXTERN int		Shape_GetBbox(Tcl_Interp *interp, Tk_Window tkwin,
 			    int getClip, int *valid, int *x1, int *y1, int *x2,
@@ -52,21 +58,24 @@ EXTERN int		Shape_GetBbox(Tcl_Interp *interp, Tk_Window tkwin,
 EXTERN int		Shape_GetShapeRectanglesObj(Tcl_Interp *interp,
 			    Tk_Window tkwin, int getClip);
 EXTERN int		Shape_MoveShape(Tcl_Interp *interp, Tk_Window tkwin,
-			    int kind, int x, int y);
+			    ShapeKind kind, int x, int y);
 EXTERN int		Shape_CombineBitmap(Tcl_Interp *interp, Tk_Window tkwin,
-			    int kind, int op, int x, int y, Pixmap bitmap);
+			    ShapeKind kind, ShapeOps op, int x, int y,
+			    Pixmap bitmap);
 EXTERN int		Shape_CombineRectangles(Tcl_Interp *interp,
-			    Tk_Window tkwin, int kind, int op,
+			    Tk_Window tkwin, ShapeKind kind, ShapeOps op,
 			    int rectc, XRectangle *rectv);
 EXTERN int		Shape_CombineRectanglesOrdered(Tcl_Interp *interp,
-			    Tk_Window tkwin, int kind, int op,
+			    Tk_Window tkwin, ShapeKind kind, ShapeOps op,
 			    int rectc, XRectangle *rectv);
 EXTERN int		Shape_CombineWindow(Tcl_Interp *interp, Tk_Window tkwin,
-			    int kind, int op, int x, int y, Tk_Window srcwin);
+			    ShapeKind kind, ShapeOps op, int x, int y,
+			    Tk_Window srcwin);
 EXTERN int		Shape_CombineRegion(Tcl_Interp *interp, Tk_Window tkwin,
-			    int kind, int op, int x, int y, Region region);
+			    ShapeKind kind, ShapeOps op, int x, int y,
+			    Region region);
 EXTERN int		Shape_Reset(Tcl_Interp *interp, Tk_Window tkwin,
-			    int kind);
+			    ShapeKind kind);
 EXTERN int		Shape_QueryVersion(Tk_Window tkwin, int *majorPtr,
 			    int *minorPtr);
 EXTERN int		Shape_ExtensionPresent(Tk_Window tkwin);
