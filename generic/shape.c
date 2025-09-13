@@ -28,50 +28,56 @@
 #define max(x,y)	((x)<(y) ? (y) : (x))
 #define encodeKind(idx,flag)	((idx) | (flag ? SHAPE_KIND_TOPLEVEL : 0))
 
+typedef enum Operations {
+    boundsCmd,		// The [shape bounds] command.
+    getCmd,		// The [shape get] command.
+    offsetCmd,		// The [shape offset] command.
+    setCmd,		// The [shape set] command.
+    updateCmd,		// The [shape update] command.
+    versionCmd		// The [shape version] command.
+} Operations;
+
 typedef int (*shapeCommandHandler) (Tk_Window tkwin, Tcl_Interp *interp,
-			int opnum, int objc, Tcl_Obj *const objv[]);
+			Operations opnum, int objc, Tcl_Obj *const objv[]);
 typedef int (*shapeApplicator) (Tk_Window tkwin, Tcl_Interp *interp,
-			int x, int y, int op, int kind, int objc,
+			int x, int y, ShapeOps op, ShapeKind kind, int objc,
 			Tcl_Obj *const objv[]);
 
 static int		shapeBoundClipOps(Tk_Window tkwin, Tcl_Interp *interp,
-			    int opnum, int objc, Tcl_Obj *const objv[]);
+			    Operations opnum, int objc, Tcl_Obj *const objv[]);
 static int		shapeOffsetOp(Tk_Window tkwin, Tcl_Interp *interp,
-			    int opnum, int objc, Tcl_Obj *const objv[]);
+			    Operations opnum, int objc, Tcl_Obj *const objv[]);
 static int		shapeSetUpdateOps(Tk_Window tkwin, Tcl_Interp *interp,
-			    int opnum, int objc, Tcl_Obj *const objv[]);
+			    Operations opnum, int objc, Tcl_Obj *const objv[]);
 static int		shapeBitmap(Tk_Window tkwin, Tcl_Interp *interp,
-			    int x, int y, int op, int kind, int objc,
-			    Tcl_Obj *const objv[]);
+			    int x, int y, ShapeOps op, ShapeKind kind,
+			    int objc, Tcl_Obj *const objv[]);
 static int		shapeRects(Tk_Window tkwin, Tcl_Interp *interp,
-			    int x, int y, int op, int kind, int objc,
-			    Tcl_Obj *const objv[]);
+			    int x, int y, ShapeOps op, ShapeKind kind,
+			    int objc, Tcl_Obj *const objv[]);
 static int		shapeReset(Tk_Window tkwin, Tcl_Interp *interp,
-			    int x, int y, int op, int kind, int objc,
-			    Tcl_Obj *const objv[]);
+			    int x, int y, ShapeOps op, ShapeKind kind,
+			    int objc, Tcl_Obj *const objv[]);
 static int		shapeText(Tk_Window tkwin, Tcl_Interp *interp,
-			    int x, int y, int op, int kind, int objc,
-			    Tcl_Obj *const objv[]);
+			    int x, int y, ShapeOps op, ShapeKind kind,
+			    int objc, Tcl_Obj *const objv[]);
 static int		shapeWindow(Tk_Window tkwin, Tcl_Interp *interp,
-			    int x, int y, int op, int kind, int objc,
-			    Tcl_Obj *const objv[]);
+			    int x, int y, ShapeOps op, ShapeKind kind,
+			    int objc, Tcl_Obj *const objv[]);
 static int		shapePhoto(Tk_Window tkwin, Tcl_Interp *interp,
-			    int x, int y, int op, int kind, int objc,
-			    Tcl_Obj *const objv[]);
+			    int x, int y, ShapeOps op, ShapeKind kind,
+			    int objc, Tcl_Obj *const objv[]);
 
 static int		shapeCmd(ClientData clientData, Tcl_Interp *interp,
 			    int objc, Tcl_Obj *const objv[]);
-
-enum {
-    boundsCmd, getCmd, offsetCmd, setCmd, updateCmd, versionCmd
-};
 
+// Get the tkwin for a particular window.
 static Tk_Window
 getWindow(
-    Tk_Window apptkwin,
-    Tcl_Interp *interp,
-    Tcl_Obj *pathName,
-    int *isToplevel)
+    Tk_Window apptkwin,		// Main window handle.
+    Tcl_Interp *interp,		// Interpreter for error reporting.
+    Tcl_Obj *pathName,		// Name of window.
+    int *isToplevel)		// Is this a toplevel?
 {
     char *winName   = Tcl_GetStringFromObj(pathName, NULL);
     Tk_Window tkwin = Tk_NameToWindow(interp, winName, apptkwin);
@@ -103,9 +109,9 @@ getWindow(
 
 static int
 shapeBoundClipOps(
-    Tk_Window tkwin0,
-    Tcl_Interp *interp,
-    int opnum,
+    Tk_Window apptkwin,		// Main window handle.
+    Tcl_Interp *interp,		// Interpreter for error reporting.
+    Operations opnum,
     int objc,
     Tcl_Obj *const objv[])
 {
@@ -122,7 +128,7 @@ shapeBoundClipOps(
 	    "option", 0, &idx) != TCL_OK) {
 	return TCL_ERROR;
     }
-    tkwin = getWindow(tkwin0, interp, objv[2], &toplevel);
+    tkwin = getWindow(apptkwin, interp, objv[2], &toplevel);
     if (tkwin == NULL) {
 	return TCL_ERROR;
     }
@@ -160,9 +166,9 @@ shapeBoundClipOps(
 
 static int
 shapeOffsetOp(
-    Tk_Window tkwin0,
-    Tcl_Interp *interp,
-    int opnum,
+    Tk_Window apptkwin,		// Main window handle.
+    Tcl_Interp *interp,		// Interpreter for error reporting.
+    Operations opnum,
     int objc,
     Tcl_Obj *const objv[])
 {
@@ -184,7 +190,7 @@ shapeOffsetOp(
 	    return TCL_ERROR;
 	}
     case 5:
-	tkwin = getWindow(tkwin0, interp, objv[2], &toplevel);
+	tkwin = getWindow(apptkwin, interp, objv[2], &toplevel);
 	if (tkwin == NULL ||
 		Tcl_GetIntFromObj(interp, objv[objc-2], &x) != TCL_OK ||
 		Tcl_GetIntFromObj(interp, objv[objc-1], &y) != TCL_OK) {
@@ -196,12 +202,12 @@ shapeOffsetOp(
 
 static int
 shapeBitmap(
-    Tk_Window tkwin,
-    Tcl_Interp *interp,
+    Tk_Window tkwin,		// Window to apply to.
+    Tcl_Interp *interp,		// Interpreter for error reporting.
     int x,
     int y,
-    int op,
-    int kind,
+    ShapeOps op,
+    ShapeKind kind,
     int objc,
     Tcl_Obj *const objv[])
 {
@@ -231,12 +237,12 @@ shapeBitmap(
 
 static int
 shapeRects(
-    Tk_Window tkwin,
-    Tcl_Interp *interp,
+    Tk_Window tkwin,		// Window to apply to.
+    Tcl_Interp *interp,		// Interpreter for error reporting.
     int x,
     int y,
-    int op,
-    int kind,
+    ShapeOps op,
+    ShapeKind kind,
     int objc,
     Tcl_Obj *const objv[])
 {
@@ -297,12 +303,12 @@ shapeRects(
 
 static int
 shapeReset(
-    Tk_Window tkwin,
-    Tcl_Interp *interp,
+    Tk_Window tkwin,		// Window to apply to.
+    Tcl_Interp *interp,		// Interpreter for error reporting.
     int x,
     int y,
-    int op,
-    int kind,
+    ShapeOps op,
+    ShapeKind kind,
     int objc,
     Tcl_Obj *const objv[])
 {
@@ -318,12 +324,12 @@ shapeReset(
 
 static int
 shapeText(
-    Tk_Window tkwin,
-    Tcl_Interp *interp,
+    Tk_Window tkwin,		// Window to apply to.
+    Tcl_Interp *interp,		// Interpreter for error reporting.
     int x,
     int y,
-    int op,
-    int kind,
+    ShapeOps op,
+    ShapeKind kind,
     int objc,
     Tcl_Obj *const objv[])
 {
@@ -357,12 +363,12 @@ shapeText(
 
 static int
 shapeWindow(
-    Tk_Window tkwin,
-    Tcl_Interp *interp,
+    Tk_Window tkwin,		// Window to apply to.
+    Tcl_Interp *interp,		// Interpreter for error reporting.
     int x,
     int y,
-    int op,
-    int kind,
+    ShapeOps op,
+    ShapeKind kind,
     int objc,
     Tcl_Obj *const objv[])
 {
@@ -386,12 +392,12 @@ shapeWindow(
 
 static int
 shapePhoto(
-    Tk_Window tkwin,
-    Tcl_Interp *interp,
+    Tk_Window tkwin,		// Window to apply to.
+    Tcl_Interp *interp,		// Interpreter for error reporting.
     int x,
     int y,
-    int op,
-    int kind,
+    ShapeOps op,
+    ShapeKind kind,
     int objc,
     Tcl_Obj *const objv[])
 {
@@ -434,9 +440,9 @@ shapePhoto(
 
 static int
 shapeSetUpdateOps(
-    Tk_Window tkwin0,
-    Tcl_Interp *interp,
-    int opnum,
+    Tk_Window apptkwin,		// Main window handle.
+    Tcl_Interp *interp,		// Interpreter for error reporting.
+    Operations opnum,
     int objc,
     Tcl_Obj *const objv[])
 {
@@ -450,7 +456,7 @@ shapeSetUpdateOps(
     } opDefn;
     typedef struct updDefn {
 	const char *name;
-	int opcode;
+	ShapeOps opcode;
     } updDefn;
     static const opDefn options[] = {
 	{"-offset",	offsetargs, NULL},
@@ -481,8 +487,9 @@ shapeSetUpdateOps(
 	{NULL}
     };
 
-    int operation = ShapeSet;
-    int idx, kind, x = 0, y = 0, toplevel, opidx;
+    ShapeOps operation = SHAPE_OP_SET;
+    int idx, x = 0, y = 0, toplevel, opidx;
+    ShapeKind kind;
     Tk_Window tkwin;
 
     switch (opnum) {
@@ -511,7 +518,7 @@ shapeSetUpdateOps(
 	Tcl_Panic("bad operation: %d", opnum);
     }
 
-    tkwin = getWindow(tkwin0, interp, objv[2], &toplevel);
+    tkwin = getWindow(apptkwin, interp, objv[2], &toplevel);
     if (tkwin == NULL) {
 	return TCL_ERROR;
     }
@@ -558,7 +565,7 @@ shapeSetUpdateOps(
 static int
 shapeCmd(
     ClientData clientData,
-    Tcl_Interp *interp,
+    Tcl_Interp *interp,		// Interpreter for error reporting.
     int objc,
     Tcl_Obj *const objv[])
 {
@@ -613,7 +620,7 @@ shapeCmd(
 
 int
 Shape_Init(
-    Tcl_Interp *interp)
+    Tcl_Interp *interp)		// Interpreter to install into.
 {
     Tk_Window tkwin = Tk_MainWindow(interp);
 
@@ -631,5 +638,5 @@ Shape_Init(
     /* See the head of the shape.h file for the definitions of these macros */
     Tcl_SetVar(interp, "shape_version", SHAPE_VERSION, TCL_GLOBAL_ONLY);
     Tcl_SetVar(interp, "shape_patchLevel", SHAPE_PATCHLEVEL, TCL_GLOBAL_ONLY);
-    return Tcl_PkgProvide(interp, "shape", SHAPE_VERSION);
+    return Tcl_PkgProvide(interp, "shape", SHAPE_PATCHLEVEL);
 }

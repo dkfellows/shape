@@ -162,7 +162,7 @@ Shape_GetShapeRectanglesObj(
     Window win = Tk_WindowId(tkwin);
     XRectangle *rects = NULL;
     int count = 0;
-    int order,i;
+    int order, i;
     Tcl_Obj *rect[4], **retvals;
 
     if (win == None) {
@@ -198,7 +198,7 @@ int
 Shape_MoveShape(
     Tcl_Interp *interp,
     Tk_Window tkwin,
-    int kind,
+    ShapeKind kind,
     int x,
     int y)
 {
@@ -237,8 +237,8 @@ int
 Shape_CombineBitmap(
     Tcl_Interp *interp,
     Tk_Window tkwin,
-    int kind,
-    int op,
+    ShapeKind kind,
+    ShapeOps op,
     int x,
     int y,
     Pixmap bitmap)
@@ -277,8 +277,8 @@ int
 Shape_CombineRectangles(
     Tcl_Interp *interp,
     Tk_Window tkwin,
-    int kind,
-    int op,
+    ShapeKind kind,
+    ShapeOps op,
     int rectc,
     XRectangle *rectv)
 {
@@ -327,8 +327,8 @@ int
 Shape_CombineRectanglesOrdered(
     Tcl_Interp *interp,
     Tk_Window tkwin,
-    int kind,
-    int op,
+    ShapeKind kind,
+    ShapeOps op,
     int rectc,
     XRectangle *rectv)
 {
@@ -370,8 +370,8 @@ int
 Shape_CombineWindow(
     Tcl_Interp *interp,
     Tk_Window tkwin,
-    int kind,
-    int op,
+    ShapeKind kind,
+    ShapeOps op,
     int x,
     int y,
     Tk_Window srcwin)
@@ -479,8 +479,8 @@ int
 Shape_CombineRegion(
     Tcl_Interp *interp,
     Tk_Window tkwin,
-    int kind,
-    int op,
+    ShapeKind kind,
+    ShapeOps op,
     int x,
     int y,
     Region region)
@@ -520,30 +520,27 @@ int
 Shape_Reset(
     Tcl_Interp *interp,
     Tk_Window tkwin,
-    int kind)
+    ShapeKind kind)
 {
     /* Maps to this on X... */
     return Shape_CombineBitmap(interp, tkwin, kind, SHAPE_OP_SET, 0, 0, None);
 }
 
 int
-Shape_QueryVersion(tkwin, majorPtr, minorPtr)
-     Tk_Window tkwin;
-     int *majorPtr, *minorPtr;
+Shape_QueryVersion(
+    Tk_Window tkwin,
+    int *majorPtr,
+    int *minorPtr)
 {
-    Status result;
-
-    result = XShapeQueryVersion(Tk_Display(tkwin), majorPtr, minorPtr);
+    Status result = XShapeQueryVersion(Tk_Display(tkwin), majorPtr, minorPtr);
     return (result == True);
 }
 
 int
-Shape_ExtensionPresent(tkwin)
-     Tk_Window tkwin;
+Shape_ExtensionPresent(
+    Tk_Window tkwin)
 {
     int eventBase, errorBase; /* These are ignored by us! */
-    Status result;
-
-    result = XShapeQueryExtension(Tk_Display(tkwin), &eventBase, &errorBase);
+    Status result = XShapeQueryExtension(Tk_Display(tkwin), &eventBase, &errorBase);
     return (result == True);
 }

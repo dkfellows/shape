@@ -406,7 +406,7 @@ int
 ShapeCombineHRGN(
     Tcl_Interp *interp,
     Tk_Window tkwin,
-    int kind,
+    ShapeKind kind,
     ShapeOps op,
     const POINT *offset, 
     HRGN region)
@@ -471,8 +471,8 @@ int
 Shape_CombineRectangles(
     Tcl_Interp *interp,
     Tk_Window tkwin,
-    int kind,
-    int op,
+    ShapeKind kind,
+    ShapeOps op,
     int rectc,
     XRectangle *rectv)
 {
@@ -513,8 +513,8 @@ int
 Shape_CombineRectanglesOrdered(
     Tcl_Interp *interp,
     Tk_Window tkwin,
-    int kind,
-    int op,
+    ShapeKind kind,
+    ShapeOps op,
     int rectc,
     XRectangle *rectv)
 {
@@ -566,8 +566,8 @@ int
 Shape_CombineRegion(
     Tcl_Interp *interp,
     Tk_Window tkwin,
-    int kind,
-    int op,
+    ShapeKind kind,
+    ShapeOps op,
     int x,
     int y,
     Region region)
@@ -586,8 +586,8 @@ Shape_CombineWindow(
     Tcl_Interp *interp,
     Tk_Window tkwin,
     Tk_Window srcwin,
-    int kind,
-    int op,
+    ShapeKind kind,
+    ShapeOps op,
     int x,
     int y)
 {
@@ -611,7 +611,7 @@ int
 Shape_Reset(
     Tcl_Interp *interp,
     Tk_Window tkwin,
-    int kind)
+    ShapeKind kind)
 {
     HWND window, parent;
 
@@ -631,7 +631,7 @@ int
 Shape_MoveShape(
     Tcl_Interp *interp,
     Tk_Window tkwin,
-    int kind,
+    ShapeKind kind,
     int x,
     int y)
 {
@@ -678,7 +678,7 @@ int
 Shape_GetBbox(
     Tcl_Interp *interp,
     Tk_Window tkwin,
-    int kind,	/* ignored */
+    ShapeKind kind,
     int *valid,
     int *x1,
     int *y1,
@@ -712,7 +712,7 @@ int
 Shape_GetShapeRectanglesObj(
     Tcl_Interp *interp,
     Tk_Window tkwin,
-    int kind)
+    ShapeKind kind)
 {
     HWND window;
     HRGN region;
@@ -798,7 +798,7 @@ int
 Shape_CombineBitmap(
     Tcl_Interp *interp,
     Tk_Window tkwin,
-    int kind,
+    ShapeKind kind,
     int op,
     int x,
     int y,

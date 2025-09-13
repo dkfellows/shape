@@ -7,5 +7,5 @@
 package ifneeded Shape 0.4.4 [apply {{dir} {
     package require Tk 8.6-
     package provide Shape 0.4.4
-    load [file join $dir libshape04.so.1.0]
+    load [file join $dir shape04.dll]
 }}]
