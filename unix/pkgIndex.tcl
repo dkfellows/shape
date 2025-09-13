@@ -4,5 +4,8 @@
 # it needs to be mangled like this to get the names working happily on
 # broken OSes like SunOS4.  If you have a problem with this, tough!
 
-package ifneeded Shape 0.4 "package require Tk 8\n\
-	[list tclPkgSetup $dir Shape 0.4 {{libshape04.so.1.0 load shape}}]"
+package ifneeded Shape 0.4 [apply {{dir} {
+    package require Tk 8.6-
+    package provide Shape 0.4
+    load [file join $dir libshape04.so.1.0]
+}}]
